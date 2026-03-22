@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoe word je ayahuasca begeleider? — Psychedelica.nl</title>
+  <meta name="description" content="Een gids met 21 stappen om te beginnen als plant ceremonie facilitator.">
+  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+  <div class="progress-bar" id="progressBar"></div>
+  <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <main id="main-content">
+    <article id="app"></article>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/assets/js/site.js"></script>
+  <script src="content.js"></script>
+  <script>
+  (function() {
+    Site.init({ page: 'artikel' });
+    var C = window.SITE_CONTENT;
+    var lang = Site.getLang();
+
+    /* SEO — §3b */
+    Site.seo({
+      canonical: '/articles/hoe-word-je-ayahuasca-begeleider/',
+      title: C.meta.title_nl + ' — Psychedelica.nl',
+      description: C.meta.subtitle_nl,
+      ogType: 'article',
+      breadcrumbs: [
+        { name: 'Home', url: '/' },
+        { name: 'Artikelen', url: '/artikelen/' },
+        { name: C.meta.title_nl, url: '/articles/hoe-word-je-ayahuasca-begeleider/' }
+      ],
+      article: {
+        headline: C.meta.title_nl,
+        description: C.meta.subtitle_nl,
+        datePublished: C.meta.date,
+        dateModified: C.meta.date,
+        url: '/articles/hoe-word-je-ayahuasca-begeleider/',
+        keywords: C.meta.tags.join(', ')
+      }
+    });
+
+    /* Bilingual helpers */
+    function L(base) { return C[base + '_' + lang] || C[base + '_nl']; }
+    function Lf(obj, field) { return obj[field + '_' + lang] || obj[field + '_nl']; }
+    function esc(s) { return Site.esc(s); }
+
+    var chevronSVG = '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+
+    /* Paragraph renderer — handles plain strings and heading objects */
+    function paragraphsHTML(arr) {
+      return arr.map(function(p) {
+        if (typeof p === 'string') return '<p>' + esc(p) + '</p>';
+        var h = Lf(p, 'heading');
+        var t = Lf(p, 'text');
+        return '<div class="step-sub"><h4>' + esc(h) + '</h4><p>' + esc(t) + '</p></div>';
+      }).join('\n');
+    }
+
+    /* Sub-accordions */
+    function buildSubAccordions(subs) {
+      return subs.map(function(s) {
+        var pars = Lf(s, 'paragraphs');
+        return '<div class="sub-accordion accordion" id="' + s.id + '">' +
+          '<button class="accordion-trigger" onclick="Site.toggleAccordion(\'' + s.id + '\')">' +
+            esc(Lf(s, 'title')) + chevronSVG +
+          '</button>' +
+          '<div class="accordion-body"><div class="accordion-content">' +
+            pars.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') +
+          '</div></div></div>';
+      }).join('');
+    }
+
+    /* Accordions */
+    function buildAccordions(accs) {
+      return accs.map(function(a) {
+        var pars = Lf(a, 'paragraphs');
+        var hasSubs = a.subAccordions && a.subAccordions.length > 0;
+        return '<div class="accordion" id="' + a.id + '">' +
+          '<button class="accordion-trigger" onclick="Site.toggleAccordion(\'' + a.id + '\')">' +
+            esc(Lf(a, 'title')) + chevronSVG +
+          '</button>' +
+          '<div class="accordion-body"><div class="accordion-content">' +
+            pars.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') +
+            (hasSubs ? buildSubAccordions(a.subAccordions) : '') +
+          '</div></div></div>';
+      }).join('');
+    }
+
+    /* Phases + steps */
+    function buildPhases() {
+      var phaseLabel = lang === 'en' ? 'Phase' : 'Fase';
+      var ofLabel = lang === 'en' ? 'of' : 'van';
+      var html = '';
+      C.phases.forEach(function(phase) {
+        html += '<section class="phase-transition phase-' + phase.number + '" id="fase' + phase.number + '">' +
+          '<div class="phase-transition-label">' + phaseLabel + ' ' + phase.number + ' ' + ofLabel + ' 5</div>' +
+          '<h2>' + esc(Lf(phase, 'title')) + '</h2>' +
+          '<p>' + esc(Lf(phase, 'description')) + '</p></section>';
+
+        html += '<div class="phase-' + phase.number + '-steps">';
+        C.steps.forEach(function(step) {
+          if (step.number < phase.stepRange[0] || step.number > phase.stepRange[1]) return;
+          var pars = Lf(step, 'paragraphs');
+          html += '<section class="step" id="stap' + step.number + '">' +
+            '<div class="step-header">' +
+              '<span class="step-number">' + step.number + '</span>' +
+              '<h3 class="step-title">' + esc(Lf(step, 'title')) + '</h3>' +
+            '</div>' +
+            '<div class="step-body">' + paragraphsHTML(pars) + '</div></section>';
+
+          if (C.pullQuotes[step.number]) {
+            html += '<div class="pull-quote"><blockquote>\u201C' + esc(Lf(C.pullQuotes[step.number], '')) + '\u201D</blockquote></div>';
+          }
+        });
+        html += '</div>';
+      });
+      return html;
+    }
+
+    /* Pull quote helper — pullQuotes have {nl, en} */
+    /* Override: Lf won't work for direct {nl, en} keys, so custom: */
+    function pullQ(obj) {
+      return obj[lang] || obj['nl'];
+    }
+
+    /* TOC map */
+    function buildTOC() {
+      var body = '';
+      C.phases.forEach(function(phase) {
+        body += '<div class="toc-phase"><div class="toc-phase-label" style="color:var(--phase-' + phase.number + '-text)">' + esc(Lf(phase, 'tocLabel')) + '</div><div class="toc-phase-links">';
+        for (var n = phase.stepRange[0]; n <= phase.stepRange[1]; n++) {
+          var lbl = C.tocLabels[n];
+          body += '<a href="#stap' + n + '">' + n + '. ' + esc(lbl[lang] || lbl['nl']) + '</a>';
+        }
+        body += '</div></div>';
+      });
+      return body;
+    }
+
+    /* RENDER */
+    function render() {
+      lang = Site.getLang();
+      var tocTitle = lang === 'en' ? 'Roadmap' : 'Routekaart';
+      var conclusionTitle = lang === 'en' ? 'Conclusion' : 'Conclusie';
+      var page = '';
+
+      /* Hero */
+      page += '<header class="wrapper--narrow"><div class="article-hero">' +
+        '<div class="hero__label">' + esc(Lf(C.meta, 'heroLabel')) + '</div>' +
+        '<h1>' + esc(Lf(C.meta, 'title')) + '</h1>' +
+        '<p class="article-hero__subtitle">' + esc(Lf(C.meta, 'subtitle')) + '</p>' +
+        '<div class="article-hero__meta hero-meta">' +
+          '<span>' + esc(Lf(C.meta, 'readTime')) + '</span>' +
+          '<span>' + esc(Lf(C.meta, 'stepCount')) + '</span>' +
+          '<span>' + esc(Lf(C.meta, 'phaseCount')) + '</span>' +
+        '</div></div></header>';
+
+      page += '<div class="wrapper--narrow"><div class="divider"></div></div>';
+
+      /* Intro */
+      page += '<div class="wrapper--narrow"><div style="padding:48px 0 40px;" id="introductie">' +
+        L('intro').map(function(p){ return '<p style="max-width:var(--content-width)">' + esc(p) + '</p>'; }).join('') +
+        '</div></div>';
+
+      page += '<div class="wrapper--narrow"><div class="divider"></div></div>';
+
+      /* Context accordions */
+      page += '<div class="wrapper--narrow"><div style="padding:48px 0 56px;" id="context">' +
+        '<h2 style="margin-bottom:8px;">' + esc(Lf(C.context, 'header')) + '</h2>' +
+        '<p style="color:var(--text-muted);font-size:16px;margin-bottom:32px;max-width:var(--content-width)">' + esc(Lf(C.context, 'intro')) + '</p>' +
+        buildAccordions(C.context.accordions) +
+        '</div></div>';
+
+      page += '<div class="wrapper--narrow"><div class="divider"></div></div>';
+
+      /* Preamble */
+      page += '<div class="wrapper--narrow"><div style="padding:24px 0 16px;">' +
+        L('preamble').map(function(p){ return '<p style="max-width:var(--content-width)">' + esc(p) + '</p>'; }).join('') +
+        '</div></div>';
+
+      /* TOC map */
+      page += '<div class="wrapper--narrow"><div class="toc-map" id="toc"><div class="toc-map-inner">' +
+        '<div class="toc-map-header" onclick="document.getElementById(\'toc\').classList.toggle(\'collapsed\')">' +
+          '<h2><span class="map-icon">&#9670;</span> ' + esc(tocTitle) + '</h2>' +
+          '<svg class="chevron-toc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+        '</div>' +
+        '<div class="toc-map-body">' + buildTOC() + '</div>' +
+        '</div></div></div>';
+
+      /* Phases + steps — fix pullQuote rendering */
+      var phaseLabel = lang === 'en' ? 'Phase' : 'Fase';
+      var ofLabel = lang === 'en' ? 'of' : 'van';
+      C.phases.forEach(function(phase) {
+        page += '<div class="wrapper--narrow"><section class="phase-transition phase-' + phase.number + '" id="fase' + phase.number + '">' +
+          '<div class="phase-transition-label">' + phaseLabel + ' ' + phase.number + ' ' + ofLabel + ' 5</div>' +
+          '<h2>' + esc(Lf(phase, 'title')) + '</h2>' +
+          '<p>' + esc(Lf(phase, 'description')) + '</p></section></div>';
+
+        page += '<div class="wrapper--narrow phase-' + phase.number + '-steps">';
+        C.steps.forEach(function(step) {
+          if (step.number < phase.stepRange[0] || step.number > phase.stepRange[1]) return;
+          var pars = Lf(step, 'paragraphs');
+          page += '<section class="step" id="stap' + step.number + '">' +
+            '<div class="step-header">' +
+              '<span class="step-number">' + step.number + '</span>' +
+              '<h3 class="step-title">' + esc(Lf(step, 'title')) + '</h3>' +
+            '</div>' +
+            '<div class="step-body">' + paragraphsHTML(pars) + '</div></section>';
+
+          if (C.pullQuotes[step.number]) {
+            page += '<div class="pull-quote"><blockquote>\u201C' + esc(pullQ(C.pullQuotes[step.number])) + '\u201D</blockquote></div>';
+          }
+        });
+        page += '</div>';
+      });
+
+      /* Conclusion */
+      page += '<div class="conclusion-section" id="conclusie"><div class="conclusion-inner">' +
+        '<h2>' + esc(conclusionTitle) + '</h2>' +
+        L('conclusion').map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') +
+        '</div></div>';
+
+      document.getElementById('app').innerHTML = page;
+    }
+
+    render();
+
+    /* Re-render on language change */
+    document.addEventListener('langChanged', function() { render(); });
+
+    /* Progress bar + back to top */
+    var ticking = false;
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        requestAnimationFrame(function() {
+          var h = document.documentElement;
+          var pct = h.scrollHeight > h.clientHeight
+            ? ((h.scrollTop || document.body.scrollTop) / (h.scrollHeight - h.clientHeight)) * 100 : 0;
+          document.getElementById('progressBar').style.width = pct + '%';
+          var btn = document.getElementById('backToTop');
+          if (btn) btn.classList.toggle('visible', window.scrollY > 600);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  })();
+  </script>
+
+  <!-- Article-specific: Quiz -->
+  <script src="quiz.js"></script>
+
+  <script src="/assets/js/tracking.js"></script>
+</body>
+</html>

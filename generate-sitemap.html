@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Sitemap Generator — Psychedelica.nl</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+  h1 { font-size: 22px; margin-bottom: 8px; }
+  p { color: #666; margin-bottom: 20px; }
+  pre { background: #f4f4f4; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; white-space: pre-wrap; max-height: 500px; overflow-y: auto; }
+  button { background: #8B5CC8; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-right: 8px; }
+  button:hover { background: #7048A6; }
+  .status { margin: 16px 0; font-size: 14px; }
+  .ok { color: #1D9E75; }
+  .err { color: #C74545; }
+</style>
+</head>
+<body>
+<h1>Sitemap Generator</h1>
+<p>Reads <code>/articles/index.json</code> and generates a complete <code>sitemap.xml</code> with all static pages + all articles.</p>
+
+<button onclick="generate()">Generate sitemap</button>
+<button onclick="download()" id="dlBtn" style="display:none;">Download sitemap.xml</button>
+
+<div class="status" id="status"></div>
+<pre id="output"></pre>
+
+<script>
+var DOMAIN = 'https://psychedelica.nl';
+
+// Static pages (add new non-article pages here)
+var STATIC_PAGES = [
+  { loc: '/', changefreq: 'weekly', priority: '1.0' },
+  { loc: '/artikelen/', changefreq: 'weekly', priority: '0.8' },
+  // Add more static pages below as you create them:
+  // { loc: '/over-ons/', changefreq: 'monthly', priority: '0.5' },
+  // { loc: '/contact/', changefreq: 'monthly', priority: '0.4' },
+];
+
+var xmlContent = '';
+
+function urlBlock(loc, opts) {
+  opts = opts || {};
+  var full = DOMAIN + loc;
+  var xml = '  <url>\n';
+  xml += '    <loc>' + full + '</loc>\n';
+  if (opts.lastmod) xml += '    <lastmod>' + opts.lastmod + '</lastmod>\n';
+  if (opts.changefreq) xml += '    <changefreq>' + opts.changefreq + '</changefreq>\n';
+  if (opts.priority) xml += '    <priority>' + opts.priority + '</priority>\n';
+  // Hreflang (self-referencing for bilingual single-URL pages)
+  xml += '    <xhtml:link rel="alternate" hreflang="nl" href="' + full + '"/>\n';
+  xml += '    <xhtml:link rel="alternate" hreflang="en" href="' + full + '"/>\n';
+  xml += '    <xhtml:link rel="alternate" hreflang="x-default" href="' + full + '"/>\n';
+  xml += '  </url>\n';
+  return xml;
+}
+
+function generate() {
+  var status = document.getElementById('status');
+  var output = document.getElementById('output');
+  status.textContent = 'Fetching index.json...';
+  status.className = 'status';
+
+  fetch('/articles/index.json')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(articles) {
+      var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
+      xml += '        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
+
+      // Static pages
+      STATIC_PAGES.forEach(function(p) {
+        xml += urlBlock(p.loc, { changefreq: p.changefreq, priority: p.priority });
+      });
+
+      // Articles from index.json
+      articles.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+      articles.forEach(function(a) {
+        xml += urlBlock('/articles/' + a.slug + '/', {
+          lastmod: a.date,
+          changefreq: 'monthly',
+          priority: '0.9'
+        });
+      });
+
+      xml += '</urlset>\n';
+
+      xmlContent = xml;
+      output.textContent = xml;
+      status.textContent = 'Generated with ' + STATIC_PAGES.length + ' static pages + ' + articles.length + ' articles.';
+      status.className = 'status ok';
+      document.getElementById('dlBtn').style.display = '';
+    })
+    .catch(function(err) {
+      status.textContent = 'Error: ' + err.message + '. Make sure you open this page on your live site (not as a local file).';
+      status.className = 'status err';
+    });
+}
+
+function download() {
+  if (!xmlContent) return;
+  var blob = new Blob([xmlContent], { type: 'application/xml' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sitemap.xml';
+  a.click();
+}
+</script>
+</body>
+</html>

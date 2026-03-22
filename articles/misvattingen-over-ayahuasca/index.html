@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>7 misvattingen over ayahuasca ontkracht — Psychedelica.nl</title>
+  <meta name="description" content="De waarheid achter de meest voorkomende misverstanden rondom ayahuasca.">
+  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+  <div class="progress-bar" id="progressBar"></div>
+  <button class="back-to-top" id="backToTop" aria-label="Back to top"
+    onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <main id="main-content">
+    <article id="app"></article>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/assets/js/site.js"></script>
+  <script src="content.js"></script>
+  <script>
+  (function() {
+    Site.init({ page: 'artikel' });
+    var C = window.SITE_CONTENT;
+    var lang = Site.getLang();
+
+    /* SEO — mandatory */
+    Site.seo({
+      canonical: '/articles/misvattingen-over-ayahuasca/',
+      title: C.meta.title_nl + ' — Psychedelica.nl',
+      description: C.meta.subtitle_nl,
+      ogType: 'article',
+      breadcrumbs: [
+        { name: 'Home', url: '/' },
+        { name: 'Artikelen', url: '/artikelen/' },
+        { name: C.meta.title_nl, url: '/articles/misvattingen-over-ayahuasca/' }
+      ],
+      article: {
+        headline: C.meta.title_nl,
+        description: C.meta.subtitle_nl,
+        datePublished: C.meta.date,
+        dateModified: C.meta.date,
+        url: '/articles/misvattingen-over-ayahuasca/',
+        keywords: C.meta.tags.join(', ')
+      }
+    });
+
+    /* Bilingual helpers */
+    function L(base) { return C[base + '_' + lang] || C[base + '_nl']; }
+    function Lf(obj, field) { return obj[field + '_' + lang] || obj[field + '_nl']; }
+    function esc(s) { return Site.esc(s); }
+
+    /* RENDER */
+    function render() {
+      lang = Site.getLang();
+      var conclusionTitle = lang === 'en' ? 'Conclusion' : 'Conclusie';
+      var page = '';
+
+      /* Hero */
+      page += '<header class="wrapper--narrow"><div class="article-hero">' +
+        '<div class="hero__label">' + esc(Lf(C.meta, 'heroLabel')) + '</div>' +
+        '<h1>' + esc(Lf(C.meta, 'title')) + '</h1>' +
+        '<p class="article-hero__subtitle">' + esc(Lf(C.meta, 'subtitle')) + '</p>' +
+        '<div class="article-hero__meta hero-meta">' +
+          '<span>' + esc(Lf(C.meta, 'readTime')) + '</span>' +
+        '</div></div></header>';
+
+      page += '<div class="wrapper--narrow"><div class="divider"></div></div>';
+
+      /* Intro */
+      page += '<div class="wrapper--narrow"><div style="padding:48px 0 40px;" id="introductie">' +
+        L('intro').map(function(p) {
+          return '<p style="max-width:var(--content-width)">' + esc(p) + '</p>';
+        }).join('') +
+        '</div></div>';
+
+      page += '<div class="wrapper--narrow"><div class="divider"></div></div>';
+
+      /* Listicle items */
+      C.items.forEach(function(item) {
+        var pars = Lf(item, 'paragraphs');
+        page += '<div class="wrapper--narrow">' +
+          '<section class="step" id="misvatting' + item.number + '">' +
+            '<div class="step-header">' +
+              '<span class="step-number">' + item.number + '</span>' +
+              '<h2 class="step-title">' + esc(Lf(item, 'title')) + '</h2>' +
+            '</div>' +
+            '<div class="step-body">' +
+              pars.map(function(p) {
+                return '<p>' + esc(p) + '</p>';
+              }).join('') +
+            '</div>' +
+          '</section></div>';
+      });
+
+      /* Conclusion */
+      page += '<div class="conclusion-section" id="conclusie"><div class="conclusion-inner">' +
+        '<h2>' + esc(conclusionTitle) + '</h2>' +
+        L('conclusion').map(function(p) {
+          return '<p>' + esc(p) + '</p>';
+        }).join('') +
+        '</div></div>';
+
+      document.getElementById('app').innerHTML = page;
+    }
+
+    render();
+
+    /* Re-render on language change */
+    document.addEventListener('langChanged', function() { render(); });
+
+    /* Progress bar + back to top */
+    var ticking = false;
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        requestAnimationFrame(function() {
+          var h = document.documentElement;
+          var pct = h.scrollHeight > h.clientHeight
+            ? ((h.scrollTop || document.body.scrollTop) / (h.scrollHeight - h.clientHeight)) * 100 : 0;
+          document.getElementById('progressBar').style.width = pct + '%';
+          var btn = document.getElementById('backToTop');
+          if (btn) btn.classList.toggle('visible', window.scrollY > 600);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  })();
+  </script>
+  <script src="/assets/js/tracking.js"></script>
+</body>
+</html>
