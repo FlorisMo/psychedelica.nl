@@ -177,7 +177,7 @@
             return '<span class="tag">' + Site.esc(tag) + '</span>';
           }).join('');
 
-          return '<a href="/articles/' + a.slug + '/" class="card card__link">' +
+          return '<a href="/' + (l || lang) + '/articles/' + a.slug + '/" class="card card__link">' +
             '<div class="card__label">~' + a.readingTime + ' ' + readLabel + '</div>' +
             '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
             '<p class="card__desc">' + Site.esc(sub) + '</p>' +
@@ -195,7 +195,7 @@
             var tagsHTML = a.tags.map(function(tag) {
               return '<span class="tag">' + Site.esc(tag) + '</span>';
             }).join('');
-            return '<a href="/articles/' + a.slug + '/" class="card card__link">' +
+            return '<a href="/' + (l || lang) + '/articles/' + a.slug + '/" class="card card__link">' +
               '<div class="card__label">~' + a.readingTime + ' ' + readLabel + '</div>' +
               '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
               '<p class="card__desc">' + Site.esc(sub) + '</p>' +

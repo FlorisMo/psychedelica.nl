@@ -1,0 +1,4 @@
+node_modules/
+.prerender-cache.json
+.DS_Store
+.lighthouseci/
