@@ -66,8 +66,8 @@
   --bg-card:     #FFFFFF;
   --text:        var(--neutral-900);
   --text-body:   var(--neutral-700);
-  --text-muted:  var(--neutral-500);
-  --text-faint:  var(--neutral-400);
+  --text-muted:  var(--neutral-600);
+  --text-faint:  var(--neutral-600);
   --accent:      var(--brand-500);
   --accent-hover:var(--brand-600);
   --accent-light:var(--brand-100);
@@ -247,7 +247,7 @@ p:last-child { margin-bottom: 0; }
 .site-nav__link {
   font-size: 15px;
   font-weight: 400;
-  color: var(--neutral-600);
+  color: var(--text-muted);
   text-decoration: none;
   transition: color var(--duration-fast);
   position: relative;
@@ -288,7 +288,7 @@ p:last-child { margin-bottom: 0; }
   border-radius: 17px;
   border: none;
   background: transparent;
-  color: var(--neutral-600);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all var(--duration-fast);
   text-transform: uppercase;
@@ -389,7 +389,7 @@ p:last-child { margin-bottom: 0; }
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--neutral-500);
+  color: var(--neutral-300);
   margin-bottom: 16px;
 }
 
@@ -424,7 +424,7 @@ p:last-child { margin-bottom: 0; }
   font-size: 12px;
   max-width: 600px;
   line-height: 1.5;
-  opacity: 0.7;
+  color: var(--neutral-300);
 }
 
 /* ============================================================
@@ -655,7 +655,7 @@ p:last-child { margin-bottom: 0; }
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--brand-600);
   margin-bottom: 24px;
 }
 
