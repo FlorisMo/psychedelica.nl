@@ -212,7 +212,7 @@ var Site = (function() {
             '<p class="site-footer__desc" data-i18n="footer_desc">' + t('footer_desc') + '</p>' +
           '</div>' +
           '<div>' +
-            '<h4 class="site-footer__heading" data-i18n="footer_pages">' + t('footer_pages') + '</h4>' +
+            '<h2 class="site-footer__heading" data-i18n="footer_pages">' + t('footer_pages') + '</h2>' +
             '<ul class="site-footer__links">' +
               '<li><a href="/" data-i18n="nav_home">' + t('nav_home') + '</a></li>' +
               '<li><a href="/artikelen/" data-i18n="nav_articles">' + t('nav_articles') + '</a></li>' +

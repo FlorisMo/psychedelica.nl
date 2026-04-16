@@ -247,7 +247,7 @@ p:last-child { margin-bottom: 0; }
 .site-nav__link {
   font-size: 15px;
   font-weight: 400;
-  color: var(--text-muted);
+  color: var(--neutral-600);
   text-decoration: none;
   transition: color var(--duration-fast);
   position: relative;
@@ -288,7 +288,7 @@ p:last-child { margin-bottom: 0; }
   border-radius: 17px;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--neutral-600);
   cursor: pointer;
   transition: all var(--duration-fast);
   text-transform: uppercase;
