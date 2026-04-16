@@ -71,13 +71,46 @@ var Site = (function() {
     return d.innerHTML;
   }
 
+  /* URL is the source of truth for language on pre-rendered article pages.
+     For /nl/articles/<slug>/ and /en/articles/<slug>/ we read lang from
+     the path. For all other pages we fall back to localStorage. */
+  function articleLangFromPath() {
+    try {
+      var m = window.location.pathname.match(/^\/(nl|en)\/articles\//);
+      return m ? m[1] : null;
+    } catch (e) { return null; }
+  }
+
   function getLang() {
+    var fromUrl = articleLangFromPath();
+    if (fromUrl) return fromUrl;
     return localStorage.getItem('psy_lang') || config.defaultLang;
   }
 
+  /* Sibling URL for the language toggle on article pages — swaps the
+     /nl/ ↔ /en/ prefix, keeps the slug. Returns null if not on an
+     article page. */
+  function siblingArticleUrl(targetLang) {
+    try {
+      var m = window.location.pathname.match(/^\/(nl|en)(\/articles\/[^?#]*)$/);
+      if (!m) return null;
+      return '/' + targetLang + m[2] + window.location.search + window.location.hash;
+    } catch (e) { return null; }
+  }
+
   function setLang(lang) {
-    currentLang = lang;
+    /* Persist the preference either way so the next page reflects it. */
     localStorage.setItem('psy_lang', lang);
+
+    /* Article pages: navigate to the sibling URL instead of re-rendering
+       in place, so canonical/hreflang/JSON-LD stay correct per URL. */
+    var sibling = siblingArticleUrl(lang);
+    if (sibling && lang !== articleLangFromPath()) {
+      window.location.href = sibling;
+      return;
+    }
+
+    currentLang = lang;
     applyLang();
   }
 
@@ -273,6 +306,14 @@ var Site = (function() {
     var head = document.head;
     var baseUrl = 'https://psychedelica.nl';
 
+    /* Belt-and-braces: if the page already has canonical + JSON-LD +
+       hreflang baked in (pre-rendered pages), do not duplicate. We keep
+       running init effects (like language) but skip tag injection. */
+    var hasStaticCanonical = !!head.querySelector('link[rel="canonical"]');
+    var hasStaticJsonLd = !!head.querySelector('script[type="application/ld+json"]');
+    var prerendered = hasStaticCanonical && hasStaticJsonLd;
+    if (prerendered) return;
+
     // Canonical
     if (options.canonical) {
       var canon = document.createElement('link');
@@ -293,11 +334,13 @@ var Site = (function() {
       });
     }
 
-    // Robots
-    var robots = document.createElement('meta');
-    robots.name = 'robots';
-    robots.content = options.robots || 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
-    head.appendChild(robots);
+    // Robots — skip if already present
+    if (!head.querySelector('meta[name="robots"]')) {
+      var robots = document.createElement('meta');
+      robots.name = 'robots';
+      robots.content = options.robots || 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
+      head.appendChild(robots);
+    }
 
     // Open Graph
     var og = {

@@ -1,0 +1,17 @@
+{
+  "name": "psychedelica-nl",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Psychedelica.nl — static site with pre-rendered bilingual article HTML.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prerender": "node scripts/prerender.mjs",
+    "prerender:force": "node scripts/prerender.mjs --force",
+    "validate": "node scripts/validate.mjs",
+    "build": "npm run prerender:force && npm run validate",
+    "dev": "node scripts/dev.mjs"
+  }
+}

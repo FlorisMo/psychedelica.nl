@@ -1,0 +1,75 @@
+name: Prerender, Validate, and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Prerender + validate + Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prerender articles
+        run: npm run prerender:force
+
+      - name: Validate built HTML
+        run: npm run validate
+
+      - name: Start static server
+        run: npx --yes serve -l 8080 . > /tmp/server.log 2>&1 &
+        # `serve` ships with sensible static defaults. Using npx avoids a
+        # committed lockfile while still pinning via `--yes`.
+
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/ > /dev/null; then
+              echo "server up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:8080/nl/articles/misvattingen-over-ayahuasca/
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
