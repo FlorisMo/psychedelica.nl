@@ -53,16 +53,8 @@
   <script>
     (function() {
       Site.init({ page: 'artikelen' });
-      Site.seo({
-        canonical: '/artikelen/',
-        title: 'Artikelen — Psychedelica.nl',
-        description: 'Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.',
-        ogType: 'website',
-        breadcrumbs: [
-          { name: 'Home', url: '/' },
-          { name: 'Artikelen', url: '/artikelen/' }
-        ]
-      });
+      // SEO tags are baked in at build time (canonical, hreflang, JSON-LD).
+      // Site.seo() skips when it detects those, so no runtime call needed here.
 
       var allArticles = [];
       var allTags = [];
@@ -112,7 +104,8 @@
             return '<span class="tag">' + Site.esc(tag) + '</span>';
           }).join('');
 
-          return '<a href="/' + lang + '/articles/' + a.slug + '/" class="card card__link">' +
+          var articlesPath = lang === 'en' ? '/en/articles/' : '/articles/';
+          return '<a href="' + articlesPath + a.slug + '/" class="card card__link">' +
             '<div class="card__label">~' + a.readingTime + ' ' + readLabel + (a.date ? ' · ' + a.date : '') + '</div>' +
             '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
             '<p class="card__desc">' + Site.esc(sub) + '</p>' +

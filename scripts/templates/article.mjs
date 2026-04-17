@@ -23,6 +23,38 @@ const BACK_TO_TOP_SVG =
 export const DEFAULT_BASE_URL = 'https://psychedelica.nl';
 export const DEFAULT_SITE_NAME = 'Psychedelica.nl';
 
+/* URL layout: NL is the primary language and lives at the root of
+   the site (no /nl/ prefix). EN lives under /en/. Every URL helper
+   the templates and build step use must route through these so the
+   layout can be changed in one place. */
+export function langPrefix(lang) {
+  return lang === 'nl' ? '' : '/en';
+}
+
+export function homePath(lang) {
+  return `${langPrefix(lang)}/`;
+}
+
+export function listingPath(lang) {
+  return `${langPrefix(lang)}/articles/`;
+}
+
+export function articlePath(slug, lang) {
+  return `${langPrefix(lang)}/articles/${slug}/`;
+}
+
+export function homeUrl(lang, baseUrl) {
+  return baseUrl + homePath(lang);
+}
+
+export function listingUrl(lang, baseUrl) {
+  return baseUrl + listingPath(lang);
+}
+
+export function articleUrl(slug, lang, baseUrl) {
+  return baseUrl + articlePath(slug, lang);
+}
+
 const I18N = {
   nl: {
     conclusion: 'Conclusie',
@@ -403,7 +435,7 @@ export function computeArticleWordCount(data, lang) {
 function buildJsonLd(data, lang, opts) {
   const { slug, baseUrl, siteName, layout, dateModified } = opts;
   const meta = data.meta || {};
-  const urlForLang = (l) => `${baseUrl}/${l}/articles/${slug}/`;
+  const urlForLang = (l) => articleUrl(slug, l, baseUrl);
   const canonicalUrl = urlForLang(lang);
   const t = I18N[lang];
 
@@ -456,8 +488,8 @@ function buildJsonLd(data, lang, opts) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: t.home, item: `${baseUrl}/${lang}/` },
-      { '@type': 'ListItem', position: 2, name: t.articles, item: `${baseUrl}/${lang}/articles/` },
+      { '@type': 'ListItem', position: 1, name: t.home, item: homeUrl(lang, baseUrl) },
+      { '@type': 'ListItem', position: 2, name: t.articles, item: listingUrl(lang, baseUrl) },
       { '@type': 'ListItem', position: 3, name: pickField(meta, 'title', lang), item: canonicalUrl },
     ],
   };
@@ -487,10 +519,10 @@ export function renderArticle(data, lang, opts = {}) {
   const stepCount = pickField(meta, 'stepCount', lang);
   const phaseCount = pickField(meta, 'phaseCount', lang);
 
-  const canonicalPath = `/${lang}/articles/${slug}/`;
-  const canonicalUrl = baseUrl + canonicalPath;
-  const nlUrl = `${baseUrl}/nl/articles/${slug}/`;
-  const enUrl = `${baseUrl}/en/articles/${slug}/`;
+  const canonicalUrl = articleUrl(slug, lang, baseUrl);
+  const canonicalPath = canonicalUrl.slice(baseUrl.length);
+  const nlUrl = articleUrl(slug, 'nl', baseUrl);
+  const enUrl = articleUrl(slug, 'en', baseUrl);
 
   const intro = pickLangArray(data, 'intro', lang);
   const conclusion = pickLangArray(data, 'conclusion', lang);
@@ -621,8 +653,8 @@ ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
     description: ${JSON.stringify(descriptionSafe)},
     ogType: 'article',
     breadcrumbs: [
-      { name: ${JSON.stringify(t.home)}, url: '/' + ${JSON.stringify(lang)} + '/' },
-      { name: ${JSON.stringify(t.articles)}, url: '/' + ${JSON.stringify(lang)} + '/articles/' },
+      { name: ${JSON.stringify(t.home)}, url: ${JSON.stringify(homePath(lang))} },
+      { name: ${JSON.stringify(t.articles)}, url: ${JSON.stringify(listingPath(lang))} },
       { name: ${JSON.stringify(title)}, url: ${JSON.stringify(canonicalPath)} }
     ],
     article: {

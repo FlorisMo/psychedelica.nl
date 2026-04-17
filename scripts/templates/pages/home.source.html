@@ -145,49 +145,9 @@
   <script src="/assets/js/site.js"></script>
   <script>
     Site.init({ page: 'home' });
-    Site.seo({
-      canonical: '/',
-      isHomepage: true,
-      title: 'Psychedelica.nl — Alles over Psychedelica',
-      description: 'Jouw gids in de wereld van psychedelica. Wetenschap, risicobeperking en eerlijke informatie over ayahuasca, paddo\'s, LSD en meer.',
-      ogType: 'website',
-      breadcrumbs: [
-        { name: 'Home', url: '/' }
-      ]
-    });
-
-    // Load recent articles from manifest
-    fetch('/articles/index.json')
-      .then(function(r) { return r.json(); })
-      .then(function(articles) {
-        var lang = Site.getLang();
-        var grid = document.getElementById('homeArticles');
-        if (!grid) return;
-
-        // Show up to 6 most recent
-        var sorted = articles.sort(function(a, b) {
-          return new Date(b.date) - new Date(a.date);
-        }).slice(0, 6);
-
-        grid.innerHTML = sorted.map(function(a) {
-          var title = lang === 'en' ? a.title_en : a.title_nl;
-          var sub = lang === 'en' ? a.subtitle_en : a.subtitle_nl;
-          var readLabel = lang === 'en' ? 'min read' : 'min leestijd';
-          var tagsHTML = a.tags.map(function(tag) {
-            return '<span class="tag">' + Site.esc(tag) + '</span>';
-          }).join('');
-
-          return '<a href="/' + lang + '/articles/' + a.slug + '/" class="card card__link">' +
-            '<div class="card__label">~' + a.readingTime + ' ' + readLabel + '</div>' +
-            '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
-            '<p class="card__desc">' + Site.esc(sub) + '</p>' +
-            '<div class="card__tags">' + tagsHTML + '</div>' +
-          '</a>';
-        }).join('');
-      })
-      .catch(function() {
-        // Silently fail - articles will load when available
-      });
+    // SEO tags are baked in at build time (canonical, hreflang, JSON-LD).
+    // Site.seo() skips when it detects those, so no runtime call needed here.
+    // Article cards are pre-rendered at build time; no runtime fetch.
   </script>
 
   <style>

@@ -2,10 +2,10 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://psychedelica.nl/nl/</loc>
+    <loc>https://psychedelica.nl/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/"/>
   </url>
@@ -13,15 +13,15 @@
     <loc>https://psychedelica.nl/en/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/"/>
   </url>
   <url>
-    <loc>https://psychedelica.nl/nl/articles/</loc>
+    <loc>https://psychedelica.nl/articles/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/"/>
   </url>
@@ -29,16 +29,16 @@
     <loc>https://psychedelica.nl/en/articles/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/"/>
   </url>
   <url>
-    <loc>https://psychedelica.nl/nl/articles/hoe-word-je-ayahuasca-begeleider/</loc>
+    <loc>https://psychedelica.nl/articles/hoe-word-je-ayahuasca-begeleider/</loc>
     <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/hoe-word-je-ayahuasca-begeleider/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/hoe-word-je-ayahuasca-begeleider/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/hoe-word-je-ayahuasca-begeleider/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/hoe-word-je-ayahuasca-begeleider/"/>
   </url>
@@ -47,16 +47,16 @@
     <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/hoe-word-je-ayahuasca-begeleider/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/hoe-word-je-ayahuasca-begeleider/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/hoe-word-je-ayahuasca-begeleider/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/hoe-word-je-ayahuasca-begeleider/"/>
   </url>
   <url>
-    <loc>https://psychedelica.nl/nl/articles/misvattingen-over-ayahuasca/</loc>
+    <loc>https://psychedelica.nl/articles/misvattingen-over-ayahuasca/</loc>
     <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/misvattingen-over-ayahuasca/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/misvattingen-over-ayahuasca/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/misvattingen-over-ayahuasca/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/misvattingen-over-ayahuasca/"/>
   </url>
@@ -65,7 +65,7 @@
     <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/misvattingen-over-ayahuasca/"/>
+    <xhtml:link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/misvattingen-over-ayahuasca/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/misvattingen-over-ayahuasca/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/misvattingen-over-ayahuasca/"/>
   </url>

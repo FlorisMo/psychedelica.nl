@@ -2,13 +2,13 @@
 
 ## Overview
 
-This is a flat-file website built specifically for AI-assisted ("vibe coding") development. There is no CMS and no database. Articles are written as plain data (`content.js`) — a small Node-based build step turns each article into fully-rendered static HTML at `/nl/articles/<slug>/` and `/en/articles/<slug>/` so Google and LLM crawlers (ChatGPT, Claude, Perplexity, Gemini) can read the article body without executing JavaScript.
+This is a flat-file website built specifically for AI-assisted ("vibe coding") development. There is no CMS and no database. Articles are written as plain data (`content.js`) — a small Node-based build step turns each article into fully-rendered static HTML at `/articles/<slug>/` (Dutch, the default language) and `/en/articles/<slug>/` (English) so Google and LLM crawlers (ChatGPT, Claude, Perplexity, Gemini) can read the article body without executing JavaScript.
 
 **Key principles:**
 - Content is separated from layout (`content.js` per article, shared CSS/JS for design)
 - One shared design system (`site.css`) ensures consistency
 - One shared component library (`site.js`) handles header, footer, navigation, language toggle, and SEO
-- Every article has full bilingual content (NL + EN). Each language gets its **own URL** (`/nl/articles/<slug>/` and `/en/articles/<slug>/`) so canonical and hreflang stay correct per URL.
+- Every article has full bilingual content (NL + EN). Each language gets its **own URL** — Dutch is the default and lives at `/articles/<slug>/`; English lives at `/en/articles/<slug>/`. Canonical and hreflang stay correct per URL.
 - When building a new article, you feed AI the master prompt + design system files + your content, and it generates `content.js`. A pre-render step builds the HTML.
 
 ---
@@ -17,7 +17,7 @@ This is a flat-file website built specifically for AI-assisted ("vibe coding") d
 
 1. **Edit `content.js` directly** in `articles/<slug>/` — that file is the source of truth for article text (NL + EN). Follow `MASTER-PROMPT.md` for structure.
 2. **Commit and push to `main`.**
-3. **GitHub Actions runs `npm run build`** — prerenders `/nl/articles/<slug>/` and `/en/articles/<slug>/`, regenerates `sitemap.xml`, writes legacy redirect stubs at `/articles/<slug>/`, runs validation, runs Lighthouse, and deploys to GitHub Pages.
+3. **GitHub Actions runs `npm run build`** — prerenders `/articles/<slug>/` (NL) and `/en/articles/<slug>/` (EN), regenerates `sitemap.xml` and `llms.txt`, regenerates the per-language homepages (`/` and `/en/`) and listings (`/articles/` and `/en/articles/`), runs validation, runs Lighthouse, and deploys to GitHub Pages. No redirect stubs: every URL is its canonical destination.
 
 You never touch the built HTML yourself. The build step is invisible to the copywriter and to AI agents — they just edit `content.js`.
 
@@ -63,38 +63,41 @@ psychedelica.nl/                        ← Root served by GitHub Pages
 │   └── img/
 │
 ├── scripts/                            ← BUILD STEP (Node 20, no deps)
-│   ├── prerender.mjs                   ← Reads content.js → writes /nl/ and /en/ HTML
+│   ├── prerender.mjs                   ← Reads content.js + sources → writes HTML
 │   ├── validate.mjs                    ← Post-build SEO assertions
 │   ├── dev.mjs                         ← Watch-mode prerender + localhost:8080
 │   └── templates/
-│       └── article.mjs                 ← Shared template: renderArticle(data, lang)
+│       ├── article.mjs                 ← Shared article template + URL helpers
+│       ├── page.mjs                    ← Shared homepage/listing template
+│       └── pages/
+│           ├── home.source.html        ← Bilingual homepage master
+│           └── listing.source.html     ← Bilingual article-listing master
 │
-├── articles/                           ← SOURCE for all articles (editable)
-│   ├── index.json                      ← Article manifest
+├── articles/                           ← SOURCE + GENERATED Dutch article pages
+│   ├── index.json                      ← Article manifest (editable)
+│   ├── index.html                      ← GENERATED Dutch article listing
 │   │
 │   ├── hoe-word-je-ayahuasca-begeleider/
 │   │   ├── content.js                  ← Article content (bilingual NL + EN)
 │   │   ├── quiz.js                     ← Article-specific: self-assessment quiz
-│   │   └── index.html                  ← GENERATED legacy redirect stub → /nl/.../
+│   │   └── index.html                  ← GENERATED Dutch article page
 │   │
 │   └── misvattingen-over-ayahuasca/
 │       ├── content.js
-│       └── index.html                  ← GENERATED legacy redirect stub
+│       └── index.html                  ← GENERATED Dutch article page
 │
-├── nl/articles/                        ← GENERATED Dutch HTML (one folder per article)
-│   └── <slug>/index.html
+├── en/articles/                        ← GENERATED English article pages
+│   ├── index.html                      ← GENERATED English article listing
+│   └── <slug>/index.html               ← one folder per article
 │
-├── en/articles/                        ← GENERATED English HTML (one folder per article)
-│   └── <slug>/index.html
-│
-├── artikelen/                          ← Dutch overview page
-│   └── index.html                      ← Auto-fetches from /articles/index.json
+├── index.html                          ← GENERATED Dutch homepage (/)
+├── en/index.html                       ← GENERATED English homepage (/en/)
 │
 └── .github/workflows/
     └── prerender.yml                   ← Build → validate → Lighthouse → Pages deploy
 ```
 
-**Never hand-edit files under `/nl/articles/`, `/en/articles/`, `/articles/<slug>/index.html`, or `/sitemap.xml`** — they're regenerated by the build step and your edits will be overwritten. Edit `content.js` instead.
+**Never hand-edit generated files** — `index.html` at root, `articles/**/*.html`, `en/**/*.html`, `sitemap.xml`, `llms.txt`. They're rewritten by the build step and your edits will be overwritten. Edit `content.js` (per-article), `articles/index.json` (manifest), or `scripts/templates/pages/*.source.html` (homepage/listing masters) instead.
 
 ---
 
@@ -111,7 +114,7 @@ Feed your AI (Claude, ChatGPT, etc.) these files:
 5. **Your article text** — raw text, usually in Dutch
 6. **One line** specifying the layout type: `guide-steps`, `essay`, `listicle`, `explainer`, or `custom`
 
-The AI outputs a complete `content.js` (bilingual NL + EN) plus an `index.json` entry. You **no longer need a per-article `index.html`** — the build step generates both the `/nl/.../` and `/en/.../` HTML from `content.js`.
+The AI outputs a complete `content.js` (bilingual NL + EN) plus an `index.json` entry. You **no longer need a per-article `index.html`** — the build step generates both the `/articles/<slug>/` (NL) and `/en/articles/<slug>/` (EN) HTML from `content.js`.
 
 ### Step 2: Drop the content.js in place
 
@@ -125,26 +128,31 @@ Add the JSON entry to `/articles/index.json` (comma between entries).
 
 That's it. GitHub Actions runs the build step, validates the output, runs Lighthouse, and deploys. Locally you can preview with `npm run dev`.
 
-### Article URL structure
+### URL structure
+
+Dutch is the default language and lives at the root of the site. English lives under `/en/`. Every URL is its own canonical destination — no redirects.
 
 | URL | What it serves |
 |---|---|
-| `psychedelica.nl/nl/articles/<slug>/` | Dutch version (canonical for Dutch) |
-| `psychedelica.nl/en/articles/<slug>/` | English version (canonical for English) |
-| `psychedelica.nl/articles/<slug>/` | Legacy URL — meta-refresh to `/nl/articles/<slug>/` |
+| `psychedelica.nl/` | Dutch homepage |
+| `psychedelica.nl/en/` | English homepage |
+| `psychedelica.nl/articles/` | Dutch article listing |
+| `psychedelica.nl/en/articles/` | English article listing |
+| `psychedelica.nl/articles/<slug>/` | Dutch article (canonical for Dutch) |
+| `psychedelica.nl/en/articles/<slug>/` | English article (canonical for English) |
 
-Each built page contains in **static HTML** (pre-JS): the full article body, `<html lang>`, `<title>`, `<meta name=description>`, `<link rel=canonical>`, three hreflang alternates (nl, en, x-default → en), Open Graph + Twitter tags, and three JSON-LD blocks (BlogPosting, FAQPage, BreadcrumbList).
+Each built page contains in **static HTML** (pre-JS): the full body, `<html lang>`, `<title>`, `<meta name=description>`, `<link rel=canonical>`, three hreflang alternates (nl, en, x-default → en), Open Graph + Twitter tags, and JSON-LD (BlogPosting + FAQPage + BreadcrumbList on articles; Organization + WebSite on homepage; Organization + BreadcrumbList on listing).
 
 ---
 
 ## Language System
 
-Every page supports NL/EN with a toggle in the header.
+Every page is per-language. The NL/EN toggle in the header navigates to the sibling URL.
 
 **How it works:**
-- On the homepage and static pages (non-article): elements with `data-lang="nl"` or `data-lang="en"` are shown/hidden in-place
-- On article pages: each language has its **own URL**. Clicking the toggle navigates from `/nl/articles/<slug>/` to `/en/articles/<slug>/` (or vice versa). This keeps `<html lang>`, canonical, and hreflang correct per URL.
-- Language preference is saved in `localStorage` as `psy_lang` and respected by the homepage / overview. On article pages, the URL is the source of truth for the current language.
+- The URL is the source of truth for the current language: `/en/*` is English; everything else is Dutch.
+- Clicking the toggle navigates from `/articles/<slug>/` to `/en/articles/<slug>/` (and vice versa), keeping `<html lang>`, canonical, and hreflang correct per URL.
+- Static article cards on the homepage and listing are pre-rendered in the current language, so search engines see the article list without JS.
 
 ---
 
@@ -236,7 +244,7 @@ Generated by `scripts/prerender.mjs` — everything below is baked into the stat
 `Site.seo()` still runs at runtime on article pages as a belt-and-braces fallback, but it detects the static tags and does nothing when the page is already pre-rendered.
 
 ### Non-article pages (runtime SEO)
-Pages without a pre-render (the homepage, `/artikelen/`, future static pages) still call `Site.seo({...})` to inject canonical / JSON-LD / OG at runtime.
+Every served page — homepage, listing, and article — is pre-rendered with canonical, hreflang, JSON-LD, and OG baked in at build time. `Site.seo({...})` exists as a runtime belt-and-braces fallback but detects the pre-rendered tags and skips, so there is no duplicate injection.
 
 ### When you add a new article
 1. Drop `content.js` in `articles/<slug>/`
@@ -279,4 +287,4 @@ The file `assets/js/tracking.js` handles:
 
 4. **JSON syntax matters.** Make sure there is a comma between objects in `index.json`. Missing commas will silently break the homepage and overview page.
 
-5. **The master prompt (`MASTER-PROMPT.md`) is still your AI workflow for `content.js`.** It contains everything the AI needs to generate the content. Note that it still references a per-article `index.html` — under this new system the AI's `content.js` is what matters; the per-article `index.html` is no longer required (and any legacy one at `/articles/<slug>/index.html` is overwritten with a redirect stub).
+5. **The master prompt (`MASTER-PROMPT.md`) is still your AI workflow for `content.js`.** It contains everything the AI needs to generate the content. The AI's `content.js` is the single edit point per article; the build step generates the rendered HTML at `/articles/<slug>/` (NL) and `/en/articles/<slug>/` (EN).

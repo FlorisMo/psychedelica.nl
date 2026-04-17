@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Artikelen — Psychedelica.nl</title>
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-<link rel="canonical" href="https://psychedelica.nl/nl/articles/">
-<link rel="alternate" hreflang="nl" href="https://psychedelica.nl/nl/articles/">
+<link rel="canonical" href="https://psychedelica.nl/articles/">
+<link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/">
 <link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/">
 <link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/">
 <meta property="og:site_name" content="Psychedelica.nl">
@@ -15,7 +15,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Artikelen — Psychedelica.nl">
 <meta property="og:description" content="Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.">
-<meta property="og:url" content="https://psychedelica.nl/nl/articles/">
+<meta property="og:url" content="https://psychedelica.nl/articles/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Artikelen — Psychedelica.nl">
 <meta name="twitter:description" content="Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.">
@@ -38,13 +38,13 @@
       "@type": "ListItem",
       "position": 1,
       "name": "Home",
-      "item": "https://psychedelica.nl/nl/"
+      "item": "https://psychedelica.nl/"
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "Artikelen",
-      "item": "https://psychedelica.nl/nl/articles/"
+      "item": "https://psychedelica.nl/articles/"
     }
   ]
 }</script>
@@ -76,7 +76,7 @@
       <div class="filter-bar" id="filterBar">
         <!-- Tags populated by JS -->
       </div>
-      <div class="article-grid" id="articleGrid"><a href="/nl/articles/hoe-word-je-ayahuasca-begeleider/" class="card card__link"><div class="card__label">~25 min leestijd · 2026-03-21</div><h3 class="card__title">Hoe word je ayahuasca begeleider?</h3><p class="card__desc">Een gids met 21 niet-zo-simpele stappen om te beginnen als plant ceremonie facilitator</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">begeleiding</span><span class="tag">ceremonies</span></div></a><a href="/nl/articles/misvattingen-over-ayahuasca/" class="card card__link"><div class="card__label">~5 min leestijd · 2026-03-21</div><h3 class="card__title">7 misvattingen over ayahuasca ontkracht</h3><p class="card__desc">De waarheid achter de meest voorkomende misverstanden rondom ayahuasca</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">misvattingen</span><span class="tag">veiligheid</span><span class="tag">dmt</span></div></a></div>
+      <div class="article-grid" id="articleGrid"><a href="/articles/hoe-word-je-ayahuasca-begeleider/" class="card card__link"><div class="card__label">~25 min leestijd · 2026-03-21</div><h3 class="card__title">Hoe word je ayahuasca begeleider?</h3><p class="card__desc">Een gids met 21 niet-zo-simpele stappen om te beginnen als plant ceremonie facilitator</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">begeleiding</span><span class="tag">ceremonies</span></div></a><a href="/articles/misvattingen-over-ayahuasca/" class="card card__link"><div class="card__label">~5 min leestijd · 2026-03-21</div><h3 class="card__title">7 misvattingen over ayahuasca ontkracht</h3><p class="card__desc">De waarheid achter de meest voorkomende misverstanden rondom ayahuasca</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">misvattingen</span><span class="tag">veiligheid</span><span class="tag">dmt</span></div></a></div>
       <div id="emptyState" style="display:none; text-align:center; padding:64px 0;">
         <p style="font-size:18px; color:var(--text-muted);" data-lang="nl">Geen artikelen gevonden met deze filter.</p>
       </div>
@@ -91,16 +91,8 @@
   <script>
     (function() {
       Site.init({ page: 'artikelen' });
-      Site.seo({
-        canonical: '/artikelen/',
-        title: 'Artikelen — Psychedelica.nl',
-        description: 'Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.',
-        ogType: 'website',
-        breadcrumbs: [
-          { name: 'Home', url: '/' },
-          { name: 'Artikelen', url: '/artikelen/' }
-        ]
-      });
+      // SEO tags are baked in at build time (canonical, hreflang, JSON-LD).
+      // Site.seo() skips when it detects those, so no runtime call needed here.
 
       var allArticles = [];
       var allTags = [];
@@ -150,7 +142,8 @@
             return '<span class="tag">' + Site.esc(tag) + '</span>';
           }).join('');
 
-          return '<a href="/' + lang + '/articles/' + a.slug + '/" class="card card__link">' +
+          var articlesPath = lang === 'en' ? '/en/articles/' : '/articles/';
+          return '<a href="' + articlesPath + a.slug + '/" class="card card__link">' +
             '<div class="card__label">~' + a.readingTime + ' ' + readLabel + (a.date ? ' · ' + a.date : '') + '</div>' +
             '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
             '<p class="card__desc">' + Site.esc(sub) + '</p>' +

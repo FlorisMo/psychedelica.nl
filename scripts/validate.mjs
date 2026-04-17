@@ -21,7 +21,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
-import { computeArticleWordCount, DEFAULT_BASE_URL } from './templates/article.mjs';
+import {
+  computeArticleWordCount,
+  DEFAULT_BASE_URL,
+  homeUrl,
+  listingUrl,
+  articleUrl,
+  langPrefix,
+} from './templates/article.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -178,10 +185,10 @@ class Validator {
 }
 
 function validateFile({ v, html, slug, lang, data }) {
-  const where = `/${lang}/articles/${slug}/`;
-  const expectedCanonical = `${BASE_URL}/${lang}/articles/${slug}/`;
-  const nlUrl = `${BASE_URL}/nl/articles/${slug}/`;
-  const enUrl = `${BASE_URL}/en/articles/${slug}/`;
+  const expectedCanonical = articleUrl(slug, lang, BASE_URL);
+  const where = expectedCanonical.slice(BASE_URL.length);
+  const nlUrl = articleUrl(slug, 'nl', BASE_URL);
+  const enUrl = articleUrl(slug, 'en', BASE_URL);
 
   // 1. html lang matches URL language
   const htmlLang = extractHtmlLang(html);
@@ -318,8 +325,8 @@ async function validateLlmsTxt(v, slugs) {
     v.fail(where, 'missing "# Psychedelica.nl" H1');
   } else v.ok();
   for (const slug of slugs) {
-    const nlUrl = `${BASE_URL}/nl/articles/${slug}/`;
-    const enUrl = `${BASE_URL}/en/articles/${slug}/`;
+    const nlUrl = articleUrl(slug, 'nl', BASE_URL);
+    const enUrl = articleUrl(slug, 'en', BASE_URL);
     if (!txt.includes(nlUrl)) v.fail(where, `missing link to ${nlUrl}`);
     else v.ok();
     if (!txt.includes(enUrl)) v.fail(where, `missing link to ${enUrl}`);
@@ -337,26 +344,19 @@ async function validateSitemap(v, slugs) {
   const txt = await readFile(file, 'utf8');
   for (const slug of slugs) {
     for (const lang of ['nl', 'en']) {
-      const loc = `${BASE_URL}/${lang}/articles/${slug}/`;
+      const loc = articleUrl(slug, lang, BASE_URL);
       if (!txt.includes(`<loc>${loc}</loc>`)) v.fail(where, `missing <loc>${loc}</loc>`);
       else v.ok();
     }
   }
-  // Per-language homepage + listing must be indexable entries.
   for (const loc of [
-    `${BASE_URL}/nl/`,
-    `${BASE_URL}/en/`,
-    `${BASE_URL}/nl/articles/`,
-    `${BASE_URL}/en/articles/`,
+    homeUrl('nl', BASE_URL),
+    homeUrl('en', BASE_URL),
+    listingUrl('nl', BASE_URL),
+    listingUrl('en', BASE_URL),
   ]) {
     if (!txt.includes(`<loc>${loc}</loc>`)) v.fail(where, `missing <loc>${loc}</loc>`);
     else v.ok();
-  }
-  // Root + /artikelen/ are redirect stubs and must NOT be indexable.
-  for (const stubLoc of [`${BASE_URL}/`, `${BASE_URL}/artikelen/`]) {
-    if (txt.includes(`<loc>${stubLoc}</loc>`)) {
-      v.fail(where, `redirect stub "${stubLoc}" must not appear as a <loc>`);
-    } else v.ok();
   }
 }
 
@@ -403,23 +403,76 @@ function validateLangPage({ v, html, where, lang, expectedCanonical, nlUrl, enUr
   else v.ok();
 }
 
-async function validateLangPages(v, slugs) {
+/* Regression guard: make sure no file in the deployed tree is a
+   meta-refresh redirect. Every URL must be the canonical destination. */
+async function validateNoRedirects(v) {
+  const roots = [ROOT, path.join(ROOT, 'articles'), path.join(ROOT, 'en'), path.join(ROOT, 'en', 'articles')];
+  async function* walk(dir) {
+    if (!existsSync(dir)) return;
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.name.startsWith('.') || e.name === 'node_modules' || e.name === 'scripts') continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        yield* walk(full);
+      } else if (e.name.endsWith('.html')) {
+        yield full;
+      }
+    }
+  }
+  const seen = new Set();
+  for (const root of roots) {
+    for await (const file of walk(root)) {
+      if (seen.has(file)) continue;
+      seen.add(file);
+      const txt = await readFile(file, 'utf8');
+      if (/http-equiv\s*=\s*["']refresh["']/i.test(txt)) {
+        const rel = '/' + path.relative(ROOT, file);
+        v.fail(rel, 'meta-refresh redirect present — every URL must be canonical');
+      } else v.ok();
+    }
+  }
+  // Stale directories that must not return after the NL=root migration.
+  for (const dead of ['nl', 'artikelen']) {
+    if (existsSync(path.join(ROOT, dead))) {
+      v.fail(`/${dead}/`, `stale directory present — delete it`);
+    } else v.ok();
+  }
+}
+
+async function validateLangPages(v) {
   const pages = [
-    { lang: 'nl', rel: 'nl/index.html', where: '/nl/', canonical: `${BASE_URL}/nl/` },
-    { lang: 'en', rel: 'en/index.html', where: '/en/', canonical: `${BASE_URL}/en/` },
     {
       lang: 'nl',
-      rel: 'nl/articles/index.html',
-      where: '/nl/articles/',
-      canonical: `${BASE_URL}/nl/articles/`,
+      rel: 'index.html',
+      where: '/',
+      canonical: homeUrl('nl', BASE_URL),
+      kind: 'home',
+    },
+    {
+      lang: 'en',
+      rel: 'en/index.html',
+      where: '/en/',
+      canonical: homeUrl('en', BASE_URL),
+      kind: 'home',
+    },
+    {
+      lang: 'nl',
+      rel: 'articles/index.html',
+      where: '/articles/',
+      canonical: listingUrl('nl', BASE_URL),
+      kind: 'listing',
     },
     {
       lang: 'en',
       rel: 'en/articles/index.html',
       where: '/en/articles/',
-      canonical: `${BASE_URL}/en/articles/`,
+      canonical: listingUrl('en', BASE_URL),
+      kind: 'listing',
     },
   ];
+  const nlArticlesBase = listingUrl('nl', '');
+  const enArticlesBase = listingUrl('en', '');
   for (const page of pages) {
     const file = path.join(ROOT, page.rel);
     if (!existsSync(file)) {
@@ -427,12 +480,8 @@ async function validateLangPages(v, slugs) {
       continue;
     }
     const html = await readFile(file, 'utf8');
-    const nlUrl = page.where.endsWith('/articles/')
-      ? `${BASE_URL}/nl/articles/`
-      : `${BASE_URL}/nl/`;
-    const enUrl = page.where.endsWith('/articles/')
-      ? `${BASE_URL}/en/articles/`
-      : `${BASE_URL}/en/`;
+    const nlUrl = page.kind === 'listing' ? listingUrl('nl', BASE_URL) : homeUrl('nl', BASE_URL);
+    const enUrl = page.kind === 'listing' ? listingUrl('en', BASE_URL) : homeUrl('en', BASE_URL);
     validateLangPage({
       v,
       html,
@@ -443,40 +492,10 @@ async function validateLangPages(v, slugs) {
       enUrl,
     });
 
-    // Listing + homepage must have at least one static article card
-    // link pointing into the current language tree, so crawlers see
-    // the article list without needing JS.
-    const expectedCardHref = `/${page.lang}/articles/`;
-    if (!html.includes(`href="${expectedCardHref}`)) {
-      v.fail(page.where, `no static article card link starting with "${expectedCardHref}"`);
-    } else v.ok();
-  }
-}
-
-async function validateRootRedirect(v) {
-  const file = path.join(ROOT, 'index.html');
-  const where = '/';
-  if (!existsSync(file)) {
-    v.fail(where, 'root index.html missing — bare domain would 404');
-    return;
-  }
-  const html = await readFile(file, 'utf8');
-  if (!/http-equiv\s*=\s*["']refresh["']/i.test(html)) {
-    v.fail(where, 'root index.html is not a meta-refresh redirect');
-  } else v.ok();
-  if (!html.includes('url=/nl/')) {
-    v.fail(where, 'root redirect target is not /nl/');
-  } else v.ok();
-  if (extractCanonical(html) !== `${BASE_URL}/nl/`) {
-    v.fail(where, 'root canonical should point to /nl/');
-  } else v.ok();
-  const legacy = path.join(ROOT, 'artikelen', 'index.html');
-  if (!existsSync(legacy)) {
-    v.fail('/artikelen/', 'legacy redirect stub missing');
-  } else {
-    const legacyHtml = await readFile(legacy, 'utf8');
-    if (!/http-equiv\s*=\s*["']refresh["']/i.test(legacyHtml) || !legacyHtml.includes('url=/nl/articles/')) {
-      v.fail('/artikelen/', 'stub must meta-refresh to /nl/articles/');
+    // Static article-card links must point into the current language tree.
+    const expectedPrefix = page.lang === 'en' ? enArticlesBase : nlArticlesBase;
+    if (!html.includes(`href="${expectedPrefix}`)) {
+      v.fail(page.where, `no static article card link starting with "${expectedPrefix}"`);
     } else v.ok();
   }
 }
@@ -492,35 +511,22 @@ async function main() {
   await validateRobots(v);
   await validateLlmsTxt(v, slugs);
   await validateSitemap(v, slugs);
-  await validateLangPages(v, slugs);
-  await validateRootRedirect(v);
+  await validateLangPages(v);
+  await validateNoRedirects(v);
 
   for (const slug of slugs) {
     const source = await readFile(path.join(ARTICLES_DIR, slug, 'content.js'), 'utf8');
     const data = loadContentJs(source, slug);
 
     for (const lang of ['nl', 'en']) {
-      const file = path.join(ROOT, lang, 'articles', slug, 'index.html');
+      const relDir = langPrefix(lang).slice(1);
+      const file = path.join(ROOT, relDir, 'articles', slug, 'index.html');
       if (!existsSync(file)) {
-        v.fail(`/${lang}/articles/${slug}/`, `built file missing: ${file}`);
+        v.fail(articleUrl(slug, lang, ''), `built file missing: ${file}`);
         continue;
       }
       const html = await readFile(file, 'utf8');
       validateFile({ v, html, slug, lang, data });
-    }
-
-    // Legacy stub sanity: must meta-refresh to /nl/
-    const legacy = path.join(ROOT, 'articles', slug, 'index.html');
-    if (!existsSync(legacy)) {
-      v.fail(`/articles/${slug}/`, 'legacy redirect stub missing');
-    } else {
-      const legacyHtml = await readFile(legacy, 'utf8');
-      const refreshOk = /http-equiv\s*=\s*"refresh"/i.test(legacyHtml) && legacyHtml.includes(`/nl/articles/${slug}/`);
-      const canonicalOk = extractCanonical(legacyHtml) === `${BASE_URL}/nl/articles/${slug}/`;
-      if (!refreshOk) v.fail(`/articles/${slug}/`, 'meta-refresh to /nl/ missing');
-      else v.ok();
-      if (!canonicalOk) v.fail(`/articles/${slug}/`, 'canonical should point to /nl/');
-      else v.ok();
     }
   }
 

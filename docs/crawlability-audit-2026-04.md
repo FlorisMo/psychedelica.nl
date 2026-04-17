@@ -139,10 +139,62 @@ checkout produce byte-identical output.
 - The workflow already runs `npm run validate` and Lighthouse CI before the
   deploy job, so any new check failing blocks deploy.
 
-### R6 — Auto-redirect ↻ closed
+### R6 — Auto-redirect ↻ closed (revised: no redirects at all)
 
-On Circle Lead authorization ("do what is needed to make this good without
-breaking it"), the per-language homepage split was completed in this PR:
+Circle Lead's revised direction: "Remove any redirects and just fix them
+hard. There is only two articles now, so keep it clean now we still can."
+
+URL layout simplified to a Dutch-default model with no redirects anywhere:
+
+| URL | Serves |
+| --- | --- |
+| `/` | Dutch homepage (canonical) |
+| `/en/` | English homepage (canonical) |
+| `/articles/` | Dutch article listing (canonical) |
+| `/en/articles/` | English article listing (canonical) |
+| `/articles/<slug>/` | Dutch article (canonical) |
+| `/en/articles/<slug>/` | English article (canonical) |
+
+Gone for good (return HTTP 404 — accepted for a 2-article site that has not
+yet built up legacy inbound links):
+
+- `/nl/`, `/nl/articles/`, `/nl/articles/<slug>/` — never were the
+  canonical NL URLs (they only briefly existed in this PR's earlier
+  commits before the simplification).
+- `/artikelen/` — the original NL listing path; replaced by `/articles/`.
+
+What changed mechanically:
+
+1. `scripts/templates/article.mjs` exports `langPrefix(lang)`,
+   `homePath/Url(lang)`, `listingPath/Url(lang)`, `articlePath/Url(slug,
+   lang)`. NL returns no prefix; EN returns `/en`. All other modules
+   route URL construction through these helpers.
+2. `scripts/templates/page.mjs` uses the same helpers; the link rewriter
+   maps the source's `href="/"` → `homePath(lang)` and `href="/artikelen/"`
+   → `listingPath(lang)`.
+3. `scripts/prerender.mjs` writes Dutch outputs at root paths
+   (`articles/<slug>/index.html`, `articles/index.html`, `index.html`)
+   and English outputs under `en/`. Removed: `legacyStubHtml`,
+   `buildRedirectStub` calls, the root and `/artikelen/` stub writes,
+   and the per-article legacy stub writes. Sitemap and llms.txt routed
+   through the URL helpers.
+4. `assets/js/site.js` simplified: `langFromPath()` returns `'en'` for
+   `/en/*` and `'nl'` for everything else. `setLang()` always navigates
+   to the sibling URL (no in-place toggle). Header and footer nav
+   render `/articles/` for NL and `/en/articles/` for EN.
+5. `scripts/validate.mjs` updated paths and added a `validateNoRedirects`
+   guard that scans every built `.html` file for
+   `http-equiv="refresh"` and fails if any are found, plus asserts the
+   stale `nl/` and `artikelen/` directories are absent.
+6. `lighthouserc*.json` and `.github/workflows/prerender.yml` audit URLs
+   moved from `/nl/articles/…` to `/articles/…`.
+7. `README.md` and `MASTER-PROMPT.md` updated to reflect the new layout
+   and the no-redirects policy.
+
+Validation: `npm run validate` passes 165 checks. Live HTTP probe
+confirms 200 on every canonical URL and 404 on the removed legacy
+paths. Determinism holds — two sequential `npm run prerender:force`
+runs produce byte-identical output.
 
 1. `index.html` and `artikelen/index.html` moved to
    `scripts/templates/pages/home.source.html` and `listing.source.html`

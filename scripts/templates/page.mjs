@@ -28,11 +28,19 @@
    Pure: same inputs → byte-identical output.
    ============================================================ */
 
+import {
+  homePath,
+  listingPath,
+  articlePath,
+  homeUrl,
+  listingUrl,
+} from './article.mjs';
+
 const DEFAULT_BASE_URL = 'https://psychedelica.nl';
 const DEFAULT_SITE_NAME = 'Psychedelica.nl';
 
 /* Page metadata registry. Keep narrow — this is not a CMS, just
-   the copy that needs to differ between /nl/ and /en/. */
+   the copy that needs to differ between NL and EN. */
 const PAGE_META = {
   home: {
     nl: {
@@ -60,10 +68,11 @@ const PAGE_META = {
   },
 };
 
-/* Path pairs used for canonical + hreflang per page. */
+/* Path pairs used for canonical + hreflang per page. NL is at the
+   root of the site; EN lives under /en/. */
 const PAGE_PATHS = {
-  home: { nl: '/nl/', en: '/en/' },
-  listing: { nl: '/nl/articles/', en: '/en/articles/' },
+  home: { nl: homePath('nl'), en: homePath('en') },
+  listing: { nl: listingPath('nl'), en: listingPath('en') },
 };
 
 function esc(s) {
@@ -90,12 +99,15 @@ function stripOtherLang(html, keepLang) {
 }
 
 /* Rewrite hrefs in the static markup so nav/CTA/card links point
-   to the current language tree. Only matches href="…" (and single
-   quotes); ignores absolute URLs pointing at other origins. */
+   to the current language tree. The source uses /artikelen/ (the
+   original NL listing URL) and / (the original NL homepage URL);
+   both need to be rewritten to the language-specific canonical
+   path. Matches href="…" and href='…' only, leaving fetch URLs in
+   JS and absolute origin URLs alone. */
 function rewriteLinks(html, lang) {
   return html
-    .replace(/href=(["'])\/artikelen\/\1/g, `href=$1/${lang}/articles/$1`)
-    .replace(/href=(["'])\/\1/g, `href=$1/${lang}/$1`);
+    .replace(/href=(["'])\/artikelen\/\1/g, `href=$1${listingPath(lang)}$1`)
+    .replace(/href=(["'])\/\1/g, `href=$1${homePath(lang)}$1`);
 }
 
 /* Serialize a JSON-LD object into a <script> tag with deterministic
@@ -217,7 +229,7 @@ function renderArticleCard(a, lang) {
     .join('');
   const dateSuffix = a.date ? ` · ${esc(a.date)}` : '';
   return (
-    `<a href="/${lang}/articles/${esc(a.slug)}/" class="card card__link">` +
+    `<a href="${articlePath(a.slug, lang)}" class="card card__link">` +
     `<div class="card__label">~${esc(a.readingTime)} ${readLabel}${dateSuffix}</div>` +
     `<h3 class="card__title">${esc(title)}</h3>` +
     `<p class="card__desc">${esc(sub)}</p>` +

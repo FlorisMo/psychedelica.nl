@@ -52,7 +52,7 @@ jobs:
         uses: treosh/lighthouse-ci-action@v11
         with:
           urls: |
-            http://localhost:8080/nl/articles/misvattingen-over-ayahuasca/
+            http://localhost:8080/articles/misvattingen-over-ayahuasca/
           configPath: ./lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
@@ -61,7 +61,7 @@ jobs:
         uses: treosh/lighthouse-ci-action@v11
         with:
           urls: |
-            http://localhost:8080/nl/articles/misvattingen-over-ayahuasca/
+            http://localhost:8080/articles/misvattingen-over-ayahuasca/
           configPath: ./lighthouserc.mobile.json
           uploadArtifacts: true
           temporaryPublicStorage: true

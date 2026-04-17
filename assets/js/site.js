@@ -71,50 +71,40 @@ var Site = (function() {
     return d.innerHTML;
   }
 
-  /* URL is the source of truth for language on any page served under
-     /nl/* or /en/* — homepage, listing, or article. For pages outside
-     those trees (root redirect stub, legacy paths) we fall back to
-     localStorage. */
+  /* URL layout: NL is the default language and lives at the root of
+     the site (no prefix). EN pages live under /en/. The path carries
+     the language signal unambiguously — no localStorage fallback is
+     needed for routed pages. */
   function langFromPath() {
     try {
-      var m = window.location.pathname.match(/^\/(nl|en)(\/|$)/);
-      return m ? m[1] : null;
-    } catch (e) { return null; }
+      return /^\/en(\/|$)/.test(window.location.pathname) ? 'en' : 'nl';
+    } catch (e) { return 'nl'; }
   }
 
   function getLang() {
-    var fromUrl = langFromPath();
-    if (fromUrl) return fromUrl;
-    return localStorage.getItem('psy_lang') || config.defaultLang;
+    return langFromPath();
   }
 
-  /* Sibling URL for the language toggle — swaps /nl/ ↔ /en/ while
-     keeping the rest of the path. Returns null when not on a
-     per-language page. */
+  /* Sibling URL for the language toggle — toggles the /en/ prefix
+     on and off. NL: remove /en/; EN: add /en/ in front of the rest. */
   function siblingUrl(targetLang) {
     try {
-      var m = window.location.pathname.match(/^\/(nl|en)(\/[^?#]*)?$/);
-      if (!m) return null;
-      var rest = m[2] || '/';
-      return '/' + targetLang + rest + window.location.search + window.location.hash;
+      var p = window.location.pathname;
+      var q = window.location.search + window.location.hash;
+      if (targetLang === 'nl') {
+        return p.replace(/^\/en(\/|$)/, '/') + q;
+      }
+      if (/^\/en(\/|$)/.test(p)) return p + q;
+      return '/en' + (p === '/' ? '/' : p) + q;
     } catch (e) { return null; }
   }
 
   function setLang(lang) {
-    /* Persist the preference either way so the next page reflects it. */
-    localStorage.setItem('psy_lang', lang);
-
-    /* Per-language pages (home, listing, article): navigate to the
-       sibling URL instead of re-rendering in place, so canonical,
-       hreflang, and JSON-LD stay correct per URL. */
+    /* URL is the source of truth for language. Navigate to the
+       sibling page — never toggle in place. */
+    if (lang === langFromPath()) return;
     var sibling = siblingUrl(lang);
-    if (sibling && lang !== langFromPath()) {
-      window.location.href = sibling;
-      return;
-    }
-
-    currentLang = lang;
-    applyLang();
+    if (sibling) window.location.href = sibling;
   }
 
   function applyLang() {
@@ -157,7 +147,8 @@ var Site = (function() {
      RENDER HEADER
      ------------------------------------------------------- */
   function renderHeader(activePage) {
-    var p = '/' + currentLang;
+    /* NL is at the root of the site, EN under /en/. */
+    var p = currentLang === 'en' ? '/en' : '';
     var navItems = [
       { key: 'nav_home', href: p + '/', page: 'home' },
       { key: 'nav_articles', href: p + '/articles/', page: 'artikelen' },
@@ -181,7 +172,7 @@ var Site = (function() {
 
     var html = '<header class="site-header" id="siteHeader">' +
       '<div class="site-header__inner">' +
-        '<a href="' + p + '/" class="site-logo">' +
+        '<a href="' + (p || '') + '/" class="site-logo">' +
           logoSVG +
           '<span class="site-logo__text">Psychedelica</span>' +
         '</a>' +
@@ -208,7 +199,7 @@ var Site = (function() {
      ------------------------------------------------------- */
   function renderFooter() {
     var year = new Date().getFullYear();
-    var p = '/' + currentLang;
+    var p = currentLang === 'en' ? '/en' : '';
     var html = '<footer class="site-footer">' +
       '<div class="site-footer__inner">' +
         '<div class="site-footer__top" style="grid-template-columns:1.5fr 1fr;">' +
