@@ -225,20 +225,55 @@ function validateFile({ v, html, slug, lang, data }) {
   if (!desc) v.fail(where, `<meta name="description"> is empty`);
   else v.ok();
 
-  // 5. Three parseable JSON-LD blocks including the expected types
+  // 5. Parseable JSON-LD blocks including the required types.
+  //    BlogPosting + BreadcrumbList are always required. FAQPage is
+  //    only required when the article carries an explicit
+  //    faqs_<lang> array in content.js — otherwise the template
+  //    intentionally omits it to keep HTML / JSON-LD parity (a
+  //    rendered-FAQ section exists iff FAQPage JSON-LD exists).
+  const hasExplicitFaqs =
+    Array.isArray(data['faqs_' + lang]) && data['faqs_' + lang].length >= 1;
+  const minBlocks = hasExplicitFaqs ? 3 : 2;
   const jsonLds = extractJsonLdBlocks(html);
-  if (jsonLds.length < 3) {
-    v.fail(where, `expected ≥ 3 JSON-LD blocks, got ${jsonLds.length}`);
+  if (jsonLds.length < minBlocks) {
+    v.fail(where, `expected ≥ ${minBlocks} JSON-LD blocks, got ${jsonLds.length}`);
   } else v.ok();
   const invalid = jsonLds.filter((j) => j.__invalid);
   if (invalid.length) v.fail(where, `unparseable JSON-LD blocks: ${invalid.length}`);
   else v.ok();
 
+  const requiredTypes = hasExplicitFaqs
+    ? ['BlogPosting', 'FAQPage', 'BreadcrumbList']
+    : ['BlogPosting', 'BreadcrumbList'];
   const types = jsonLds.map((j) => j && j['@type']).filter(Boolean);
-  for (const t of ['BlogPosting', 'FAQPage', 'BreadcrumbList']) {
+  for (const t of requiredTypes) {
     if (!types.includes(t)) v.fail(where, `JSON-LD missing @type "${t}"`);
     else v.ok();
   }
+  // Guard against the inverse drift: a FAQPage block must not be
+  // emitted if there is no explicit faqs_<lang> source, since the
+  // HTML has no dedicated FAQ section to match against.
+  if (!hasExplicitFaqs && types.includes('FAQPage')) {
+    v.fail(where, 'FAQPage JSON-LD present but no faqs_<lang> in content.js (parity drift)');
+  } else v.ok();
+
+  // Author Person block: YMYL policy requires BlogPosting.author
+  // to be a Person with jobTitle, affiliation, and sameAs.
+  const bpForAuthor = jsonLds.find((j) => j && j['@type'] === 'BlogPosting');
+  const author = bpForAuthor && bpForAuthor.author;
+  if (!author || author['@type'] !== 'Person') {
+    v.fail(where, `BlogPosting.author must be a Person (got ${author && author['@type']})`);
+  } else v.ok();
+  if (author && !author.name) v.fail(where, 'BlogPosting.author.name missing');
+  else if (author) v.ok();
+  if (author && !author.jobTitle) v.fail(where, 'BlogPosting.author.jobTitle missing');
+  else if (author) v.ok();
+  if (author && !(author.affiliation && author.affiliation.name)) {
+    v.fail(where, 'BlogPosting.author.affiliation.name missing');
+  } else if (author) v.ok();
+  if (author && !(Array.isArray(author.sameAs) && author.sameAs.length >= 1)) {
+    v.fail(where, 'BlogPosting.author.sameAs must be a non-empty array');
+  } else if (author) v.ok();
 
   // 6. ≥ 80% of published word count present in raw HTML
   const expectedWords = computeArticleWordCount(data, lang);
@@ -265,6 +300,54 @@ function validateFile({ v, html, slug, lang, data }) {
     const bp = jsonLds.find((j) => j && j['@type'] === 'BlogPosting');
     if (bp && bp.dateModified && bp.dateModified !== timeMatch[1]) {
       v.fail(where, `<time datetime="${timeMatch[1]}"> does not match BlogPosting.dateModified "${bp.dateModified}"`);
+    } else v.ok();
+  }
+
+  // 9. Visible byline with author name + /over-ons/ link
+  if (!/class="article-hero__byline"/.test(html)) {
+    v.fail(where, 'visible .article-hero__byline missing from hero');
+  } else v.ok();
+  if (!/href="\/over-ons\/"/.test(html)) {
+    v.fail(where, 'byline link to /over-ons/ missing');
+  } else v.ok();
+
+  // 10. Harm-reduction disclaimer on substance articles
+  const tags = Array.isArray(data.meta && data.meta.tags) ? data.meta.tags.map((t) => String(t).toLowerCase()) : [];
+  const SUBSTANCE = new Set([
+    'ayahuasca', 'psilocybin', 'psilocybine', 'paddenstoelen', 'paddo', 'paddos',
+    'truffels', 'truffel', 'lsd', 'dmt', 'mdma', 'ketamine', '2c-b', '2cb',
+    'mescaline', 'peyote', 'san pedro', 'san-pedro', 'ibogaine', 'iboga',
+    '5-meo-dmt', '5meodmt',
+  ]);
+  const isSubstance = tags.some((t) => SUBSTANCE.has(t));
+  if (isSubstance) {
+    if (!/id="harm-reduction"/.test(html)) {
+      v.fail(where, 'substance article missing harm-reduction disclaimer aside');
+    } else v.ok();
+    // All four canonical outbound links must be present
+    for (const expected of ['jellinek.nl', 'trimbos.nl', 'unity.nl', 'mainline.nl']) {
+      if (!html.includes(`href="https://${expected}/"`)) {
+        v.fail(where, `harm-reduction disclaimer missing link to ${expected}`);
+      } else v.ok();
+    }
+    if (!/href="tel:112"/.test(html)) {
+      v.fail(where, 'harm-reduction disclaimer missing tel:112 link');
+    } else v.ok();
+  }
+
+  // 11. Every outbound <a> (non-psychedelica.nl) carries rel="external"
+  const anchorRe = /<a\b([^>]*)>/gi;
+  let am;
+  while ((am = anchorRe.exec(html)) !== null) {
+    const attrs = am[1];
+    const href = matchAttr(`<a ${attrs}>`, 'href') || '';
+    if (!/^https?:\/\//i.test(href)) continue;
+    let host;
+    try { host = new URL(href).hostname.toLowerCase(); } catch { continue; }
+    if (host === 'psychedelica.nl' || host.endsWith('.psychedelica.nl')) continue;
+    const rel = matchAttr(`<a ${attrs}>`, 'rel') || '';
+    if (!/\bexternal\b/.test(rel)) {
+      v.fail(where, `outbound anchor to ${host} missing rel="external"`);
     } else v.ok();
   }
 }
