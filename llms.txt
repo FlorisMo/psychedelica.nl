@@ -1,0 +1,13 @@
+# Psychedelica.nl
+
+> Honest, no-nonsense knowledge about psychedelics for the Dutch public. Science, harm reduction, and clear answers in NL and EN.
+
+## Dutch articles
+
+- [Hoe word je ayahuasca begeleider?](https://psychedelica.nl/nl/articles/hoe-word-je-ayahuasca-begeleider/): A guide with 21 not-so-simple steps to getting started as a plant ceremony facilitator
+- [7 misvattingen over ayahuasca ontkracht](https://psychedelica.nl/nl/articles/misvattingen-over-ayahuasca/): The truth behind the most widespread misunderstandings about ayahuasca
+
+## English articles
+
+- [How to become an ayahuasca facilitator?](https://psychedelica.nl/en/articles/hoe-word-je-ayahuasca-begeleider/): A guide with 21 not-so-simple steps to getting started as a plant ceremony facilitator
+- [7 common misconceptions about ayahuasca debunked](https://psychedelica.nl/en/articles/misvattingen-over-ayahuasca/): The truth behind the most widespread misunderstandings about ayahuasca

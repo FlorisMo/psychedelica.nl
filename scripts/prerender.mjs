@@ -24,8 +24,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
-import { renderArticle, DEFAULT_BASE_URL } from './templates/article.mjs';
+import {
+  renderArticle,
+  DEFAULT_BASE_URL,
+  paragraphsToPlainText,
+  pickField,
+  pickLangArray,
+} from './templates/article.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +72,28 @@ async function readJsonSafe(file) {
 
 async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+}
+
+/**
+ * Return the ISO-8601 timestamp of the last commit that touched the given
+ * file. Falls back to `null` when outside a git checkout or when the file has
+ * no commit history yet (fresh add, un-committed local edit). Callers treat
+ * null as "use the content.js `meta.date` instead".
+ *
+ * Pure: same repo state → same output → deterministic build output.
+ */
+function gitLastModified(file) {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', file], {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+    });
+    const iso = out.trim();
+    return iso || null;
+  } catch {
+    return null;
+  }
 }
 
 async function writeIfChanged(file, content) {
@@ -220,6 +249,58 @@ ${blocks.join('\n')}
 `;
 }
 
+/* ------------------------------ llms.txt ------------------------------ */
+
+/**
+ * llmstxt.org convention: English body, H1 site name, a short tagline, and
+ * one list entry per resource. Lists every article in both /nl/ and /en/ with
+ * a one-sentence English description sourced from the EN subtitle (or the
+ * first line of the EN intro, truncated to ~140 chars).
+ */
+function buildLlmsTxt(articles) {
+  const oneLine = (data) => {
+    const meta = data.meta || {};
+    const candidates = [
+      pickField(meta, 'subtitle', 'en'),
+      paragraphsToPlainText(pickLangArray(data, 'intro', 'en'), 'en'),
+      paragraphsToPlainText(pickLangArray(data, 'preamble', 'en'), 'en'),
+    ];
+    for (const c of candidates) {
+      const s = (c || '').trim().replace(/\s+/g, ' ');
+      if (s) return s.length > 140 ? s.slice(0, 137).trimEnd() + '…' : s;
+    }
+    return '';
+  };
+
+  const lines = [];
+  lines.push('# Psychedelica.nl');
+  lines.push('');
+  lines.push(
+    '> Honest, no-nonsense knowledge about psychedelics for the Dutch public. Science, harm reduction, and clear answers in NL and EN.'
+  );
+  lines.push('');
+
+  lines.push('## Dutch articles');
+  lines.push('');
+  for (const a of articles) {
+    const titleNl = pickField(a.data.meta || {}, 'title', 'nl') || a.slug;
+    const desc = oneLine(a.data);
+    lines.push(`- [${titleNl}](${BASE_URL}/nl/articles/${a.slug}/): ${desc}`);
+  }
+  lines.push('');
+
+  lines.push('## English articles');
+  lines.push('');
+  for (const a of articles) {
+    const titleEn = pickField(a.data.meta || {}, 'title', 'en') || a.slug;
+    const desc = oneLine(a.data);
+    lines.push(`- [${titleEn}](${BASE_URL}/en/articles/${a.slug}/): ${desc}`);
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
 /* ------------------------------ main ------------------------------ */
 
 async function main() {
@@ -259,10 +340,16 @@ async function main() {
       continue;
     }
 
+    // dateModified: git commit timestamp of the most recent change to
+    // content.js. Falls back to meta.date outside a git checkout.
+    const dateModified = gitLastModified(contentPath) || data.meta.date;
+
     const articleMeta = {
       slug,
       date: data.meta.date,
+      dateModified,
       contentHash,
+      data,
     };
     builtArticles.push(articleMeta);
 
@@ -272,7 +359,13 @@ async function main() {
       existsSync(path.join(OUT_EN, slug, 'index.html')) &&
       existsSync(path.join(OUT_LEGACY, slug, 'index.html'));
 
-    if (cacheValid && prev && prev.contentHash === contentHash && outputsExist) {
+    if (
+      cacheValid &&
+      prev &&
+      prev.contentHash === contentHash &&
+      prev.dateModified === dateModified &&
+      outputsExist
+    ) {
       skipped++;
       continue;
     }
@@ -284,7 +377,12 @@ async function main() {
 
     // Render NL + EN
     for (const lang of ['nl', 'en']) {
-      const html = renderArticle(data, lang, { slug, baseUrl: BASE_URL, extraScripts });
+      const html = renderArticle(data, lang, {
+        slug,
+        baseUrl: BASE_URL,
+        extraScripts,
+        dateModified,
+      });
       const outFile = path.join(lang === 'nl' ? OUT_NL : OUT_EN, slug, 'index.html');
       if (await writeIfChanged(outFile, html)) writes++;
     }
@@ -297,16 +395,28 @@ async function main() {
     log(`[prerender] built ${slug}`);
   }
 
-  // Sitemap — always regenerate (it's trivially small, input covers all slugs)
-  const articleList = builtArticles.map((a) => ({ slug: a.slug, date: a.date }));
+  // Sitemap — always regenerate (it's trivially small, input covers all slugs).
+  // `lastmod` tracks the git-sourced dateModified so crawlers see fresh edits
+  // without needing content.js `meta.date` to be manually bumped.
+  const articleList = builtArticles.map((a) => ({
+    slug: a.slug,
+    date: (a.dateModified || a.date || '').slice(0, 10),
+  }));
   articleList.sort((a, b) => a.slug.localeCompare(b.slug));
   const sitemap = buildSitemap(articleList);
   if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), sitemap)) writes++;
 
+  // llms.txt — always regenerate (small, input is the union of all articles)
+  const llmsList = [...builtArticles].sort((a, b) => a.slug.localeCompare(b.slug));
+  const llms = buildLlmsTxt(llmsList);
+  if (await writeIfChanged(path.join(ROOT, 'llms.txt'), llms)) writes++;
+
   // Persist cache
   const newCache = {
     templateHash,
-    articles: Object.fromEntries(builtArticles.map((a) => [a.slug, { contentHash: a.contentHash }])),
+    articles: Object.fromEntries(
+      builtArticles.map((a) => [a.slug, { contentHash: a.contentHash, dateModified: a.dateModified }])
+    ),
   };
   await writeFile(CACHE_FILE, JSON.stringify(newCache, null, 2), 'utf8');
 

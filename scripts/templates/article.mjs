@@ -33,6 +33,7 @@ const I18N = {
     home: 'Home',
     articles: 'Artikelen',
     org_desc: 'Jouw gids in de wereld van psychedelica. Wetenschap, risicobeperking en eerlijke informatie.',
+    last_updated: 'Laatst bijgewerkt',
   },
   en: {
     conclusion: 'Conclusion',
@@ -43,6 +44,7 @@ const I18N = {
     home: 'Home',
     articles: 'Articles',
     org_desc: 'Your guide to the world of psychedelics. Science, harm reduction and honest information.',
+    last_updated: 'Last updated',
   },
 };
 
@@ -399,7 +401,7 @@ export function computeArticleWordCount(data, lang) {
 /* ------------------------------ JSON-LD ------------------------------ */
 
 function buildJsonLd(data, lang, opts) {
-  const { slug, baseUrl, siteName, layout } = opts;
+  const { slug, baseUrl, siteName, layout, dateModified } = opts;
   const meta = data.meta || {};
   const urlForLang = (l) => `${baseUrl}/${l}/articles/${slug}/`;
   const canonicalUrl = urlForLang(lang);
@@ -411,7 +413,7 @@ function buildJsonLd(data, lang, opts) {
     headline: pickField(meta, 'title', lang),
     description: pickField(meta, 'subtitle', lang),
     datePublished: meta.date,
-    dateModified: meta.date,
+    dateModified: dateModified || meta.date,
     inLanguage: lang,
     author: {
       '@type': 'Organization',
@@ -495,11 +497,15 @@ export function renderArticle(data, lang, opts = {}) {
   const ogLocale = lang === 'nl' ? 'nl_NL' : 'en_GB';
   const ogLocaleAlt = lang === 'nl' ? 'en_GB' : 'nl_NL';
 
+  const dateModified = opts.dateModified || meta.date || '';
+  const modifiedDateOnly = dateModified ? dateModified.slice(0, 10) : '';
+
   const { blogPosting, faqPage, breadcrumbList } = buildJsonLd(data, lang, {
     slug,
     baseUrl,
     siteName,
     layout,
+    dateModified,
   });
 
   // JSON-LD is serialised in a fixed order & form for deterministic output.
@@ -549,7 +555,7 @@ export function renderArticle(data, lang, opts = {}) {
 <meta property="og:description" content="${esc(descriptionSafe)}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="article:published_time" content="${esc(datetime)}">
-<meta property="article:modified_time" content="${esc(datetime)}">
+<meta property="article:modified_time" content="${esc(dateModified)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(htmlTitle)}">
 <meta name="twitter:description" content="${esc(descriptionSafe)}">
@@ -575,7 +581,7 @@ ${heroLabel ? `<div class="hero__label">${esc(heroLabel)}</div>` : ''}
 <p class="article-hero__subtitle">${esc(subtitle)}</p>
 <div class="article-hero__meta hero-meta">
 ${heroMeta}
-${datetime ? `<time datetime="${esc(datetime)}">${esc(datetime)}</time>` : ''}
+${dateModified ? `<span class="article-hero__updated">${esc(t.last_updated)}: <time datetime="${esc(dateModified)}">${esc(modifiedDateOnly)}</time></span>` : ''}
 </div>
 </div>
 </header>
@@ -623,7 +629,7 @@ ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
       headline: ${JSON.stringify(title)},
       description: ${JSON.stringify(descriptionSafe)},
       datePublished: ${JSON.stringify(datetime)},
-      dateModified: ${JSON.stringify(datetime)},
+      dateModified: ${JSON.stringify(dateModified)},
       url: ${JSON.stringify(canonicalPath)},
       keywords: ${JSON.stringify(Array.isArray(meta.tags) ? meta.tags.join(', ') : '')}
     }
