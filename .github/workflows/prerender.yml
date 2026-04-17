@@ -54,6 +54,7 @@ jobs:
           urls: |
             http://localhost:8080/articles/misvattingen-over-ayahuasca/
           configPath: ./lighthouserc.json
+          artifactName: lighthouse-results-desktop
           uploadArtifacts: true
           temporaryPublicStorage: true
 
@@ -63,6 +64,7 @@ jobs:
           urls: |
             http://localhost:8080/articles/misvattingen-over-ayahuasca/
           configPath: ./lighthouserc.mobile.json
+          artifactName: lighthouse-results-mobile
           uploadArtifacts: true
           temporaryPublicStorage: true
 
