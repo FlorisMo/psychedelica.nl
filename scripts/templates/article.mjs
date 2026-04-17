@@ -23,6 +23,38 @@ const BACK_TO_TOP_SVG =
 export const DEFAULT_BASE_URL = 'https://psychedelica.nl';
 export const DEFAULT_SITE_NAME = 'Psychedelica.nl';
 
+/* URL layout: NL is the primary language and lives at the root of
+   the site (no /nl/ prefix). EN lives under /en/. Every URL helper
+   the templates and build step use must route through these so the
+   layout can be changed in one place. */
+export function langPrefix(lang) {
+  return lang === 'nl' ? '' : '/en';
+}
+
+export function homePath(lang) {
+  return `${langPrefix(lang)}/`;
+}
+
+export function listingPath(lang) {
+  return `${langPrefix(lang)}/articles/`;
+}
+
+export function articlePath(slug, lang) {
+  return `${langPrefix(lang)}/articles/${slug}/`;
+}
+
+export function homeUrl(lang, baseUrl) {
+  return baseUrl + homePath(lang);
+}
+
+export function listingUrl(lang, baseUrl) {
+  return baseUrl + listingPath(lang);
+}
+
+export function articleUrl(slug, lang, baseUrl) {
+  return baseUrl + articlePath(slug, lang);
+}
+
 const I18N = {
   nl: {
     conclusion: 'Conclusie',
@@ -33,6 +65,7 @@ const I18N = {
     home: 'Home',
     articles: 'Artikelen',
     org_desc: 'Jouw gids in de wereld van psychedelica. Wetenschap, risicobeperking en eerlijke informatie.',
+    last_updated: 'Laatst bijgewerkt',
   },
   en: {
     conclusion: 'Conclusion',
@@ -43,6 +76,7 @@ const I18N = {
     home: 'Home',
     articles: 'Articles',
     org_desc: 'Your guide to the world of psychedelics. Science, harm reduction and honest information.',
+    last_updated: 'Last updated',
   },
 };
 
@@ -399,9 +433,9 @@ export function computeArticleWordCount(data, lang) {
 /* ------------------------------ JSON-LD ------------------------------ */
 
 function buildJsonLd(data, lang, opts) {
-  const { slug, baseUrl, siteName, layout } = opts;
+  const { slug, baseUrl, siteName, layout, dateModified } = opts;
   const meta = data.meta || {};
-  const urlForLang = (l) => `${baseUrl}/${l}/articles/${slug}/`;
+  const urlForLang = (l) => articleUrl(slug, l, baseUrl);
   const canonicalUrl = urlForLang(lang);
   const t = I18N[lang];
 
@@ -411,7 +445,7 @@ function buildJsonLd(data, lang, opts) {
     headline: pickField(meta, 'title', lang),
     description: pickField(meta, 'subtitle', lang),
     datePublished: meta.date,
-    dateModified: meta.date,
+    dateModified: dateModified || meta.date,
     inLanguage: lang,
     author: {
       '@type': 'Organization',
@@ -454,8 +488,8 @@ function buildJsonLd(data, lang, opts) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: t.home, item: `${baseUrl}/${lang}/` },
-      { '@type': 'ListItem', position: 2, name: t.articles, item: `${baseUrl}/${lang}/articles/` },
+      { '@type': 'ListItem', position: 1, name: t.home, item: homeUrl(lang, baseUrl) },
+      { '@type': 'ListItem', position: 2, name: t.articles, item: listingUrl(lang, baseUrl) },
       { '@type': 'ListItem', position: 3, name: pickField(meta, 'title', lang), item: canonicalUrl },
     ],
   };
@@ -485,21 +519,25 @@ export function renderArticle(data, lang, opts = {}) {
   const stepCount = pickField(meta, 'stepCount', lang);
   const phaseCount = pickField(meta, 'phaseCount', lang);
 
-  const canonicalPath = `/${lang}/articles/${slug}/`;
-  const canonicalUrl = baseUrl + canonicalPath;
-  const nlUrl = `${baseUrl}/nl/articles/${slug}/`;
-  const enUrl = `${baseUrl}/en/articles/${slug}/`;
+  const canonicalUrl = articleUrl(slug, lang, baseUrl);
+  const canonicalPath = canonicalUrl.slice(baseUrl.length);
+  const nlUrl = articleUrl(slug, 'nl', baseUrl);
+  const enUrl = articleUrl(slug, 'en', baseUrl);
 
   const intro = pickLangArray(data, 'intro', lang);
   const conclusion = pickLangArray(data, 'conclusion', lang);
   const ogLocale = lang === 'nl' ? 'nl_NL' : 'en_GB';
   const ogLocaleAlt = lang === 'nl' ? 'en_GB' : 'nl_NL';
 
+  const dateModified = opts.dateModified || meta.date || '';
+  const modifiedDateOnly = dateModified ? dateModified.slice(0, 10) : '';
+
   const { blogPosting, faqPage, breadcrumbList } = buildJsonLd(data, lang, {
     slug,
     baseUrl,
     siteName,
     layout,
+    dateModified,
   });
 
   // JSON-LD is serialised in a fixed order & form for deterministic output.
@@ -549,7 +587,7 @@ export function renderArticle(data, lang, opts = {}) {
 <meta property="og:description" content="${esc(descriptionSafe)}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="article:published_time" content="${esc(datetime)}">
-<meta property="article:modified_time" content="${esc(datetime)}">
+<meta property="article:modified_time" content="${esc(dateModified)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(htmlTitle)}">
 <meta name="twitter:description" content="${esc(descriptionSafe)}">
@@ -575,7 +613,7 @@ ${heroLabel ? `<div class="hero__label">${esc(heroLabel)}</div>` : ''}
 <p class="article-hero__subtitle">${esc(subtitle)}</p>
 <div class="article-hero__meta hero-meta">
 ${heroMeta}
-${datetime ? `<time datetime="${esc(datetime)}">${esc(datetime)}</time>` : ''}
+${dateModified ? `<span class="article-hero__updated">${esc(t.last_updated)}: <time datetime="${esc(dateModified)}">${esc(modifiedDateOnly)}</time></span>` : ''}
 </div>
 </div>
 </header>
@@ -615,15 +653,15 @@ ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
     description: ${JSON.stringify(descriptionSafe)},
     ogType: 'article',
     breadcrumbs: [
-      { name: ${JSON.stringify(t.home)}, url: '/' + ${JSON.stringify(lang)} + '/' },
-      { name: ${JSON.stringify(t.articles)}, url: '/' + ${JSON.stringify(lang)} + '/articles/' },
+      { name: ${JSON.stringify(t.home)}, url: ${JSON.stringify(homePath(lang))} },
+      { name: ${JSON.stringify(t.articles)}, url: ${JSON.stringify(listingPath(lang))} },
       { name: ${JSON.stringify(title)}, url: ${JSON.stringify(canonicalPath)} }
     ],
     article: {
       headline: ${JSON.stringify(title)},
       description: ${JSON.stringify(descriptionSafe)},
       datePublished: ${JSON.stringify(datetime)},
-      dateModified: ${JSON.stringify(datetime)},
+      dateModified: ${JSON.stringify(dateModified)},
       url: ${JSON.stringify(canonicalPath)},
       keywords: ${JSON.stringify(Array.isArray(meta.tags) ? meta.tags.join(', ') : '')}
     }

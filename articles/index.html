@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artikelen — Psychedelica.nl</title>
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<link rel="canonical" href="https://psychedelica.nl/articles/">
+<link rel="alternate" hreflang="nl" href="https://psychedelica.nl/articles/">
+<link rel="alternate" hreflang="en" href="https://psychedelica.nl/en/articles/">
+<link rel="alternate" hreflang="x-default" href="https://psychedelica.nl/en/articles/">
+<meta property="og:site_name" content="Psychedelica.nl">
+<meta property="og:locale" content="nl_NL">
+<meta property="og:locale:alternate" content="en_GB">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Artikelen — Psychedelica.nl">
+<meta property="og:description" content="Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.">
+<meta property="og:url" content="https://psychedelica.nl/articles/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Artikelen — Psychedelica.nl">
+<meta name="twitter:description" content="Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Psychedelica.nl",
+  "url": "https://psychedelica.nl",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://psychedelica.nl/assets/img/favicon.png"
+  },
+  "description": "Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie."
+}</script>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://psychedelica.nl/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Artikelen",
+      "item": "https://psychedelica.nl/articles/"
+    }
+  ]
+}</script>
+  <meta name="description" content="Alle artikelen over psychedelica. Wetenschap, risicobeperking en eerlijke informatie.">
+  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+
+  <div id="site-header"></div>
+
+  <main id="main-content">
+
+  <!-- PAGE HEADER -->
+  <section class="section--sm" style="padding-top:48px;">
+    <div class="wrapper">
+      <p class="label-mono" style="margin-bottom:12px;" data-lang="nl">Onze artikelen</p>
+      <h1 style="font-size:clamp(30px,5vw,44px); margin-bottom:12px;" data-lang="nl">Artikelen</h1>
+      <p style="font-size:18px; color:var(--text-muted); max-width:560px;" data-lang="nl">Vind hier de informatie die jij zoekt over veilig en verantwoord omgaan met psychedelische middelen.</p>
+    </div>
+  </section>
+
+  <!-- FILTER + GRID -->
+  <section class="section--sm" style="padding-top:24px; padding-bottom:80px;">
+    <div class="wrapper">
+      <div class="filter-bar" id="filterBar">
+        <!-- Tags populated by JS -->
+      </div>
+      <div class="article-grid" id="articleGrid"><a href="/articles/hoe-word-je-ayahuasca-begeleider/" class="card card__link"><div class="card__label">~25 min leestijd · 2026-03-21</div><h3 class="card__title">Hoe word je ayahuasca begeleider?</h3><p class="card__desc">Een gids met 21 niet-zo-simpele stappen om te beginnen als plant ceremonie facilitator</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">begeleiding</span><span class="tag">ceremonies</span></div></a><a href="/articles/misvattingen-over-ayahuasca/" class="card card__link"><div class="card__label">~5 min leestijd · 2026-03-21</div><h3 class="card__title">7 misvattingen over ayahuasca ontkracht</h3><p class="card__desc">De waarheid achter de meest voorkomende misverstanden rondom ayahuasca</p><div class="card__tags"><span class="tag">ayahuasca</span><span class="tag">misvattingen</span><span class="tag">veiligheid</span><span class="tag">dmt</span></div></a></div>
+      <div id="emptyState" style="display:none; text-align:center; padding:64px 0;">
+        <p style="font-size:18px; color:var(--text-muted);" data-lang="nl">Geen artikelen gevonden met deze filter.</p>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="/assets/js/site.js"></script>
+  <script>
+    (function() {
+      Site.init({ page: 'artikelen' });
+      // SEO tags are baked in at build time (canonical, hreflang, JSON-LD).
+      // Site.seo() skips when it detects those, so no runtime call needed here.
+
+      var allArticles = [];
+      var allTags = [];
+      var activeTag = null;
+
+      // Check URL params for pre-selected tag
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('tag')) activeTag = params.get('tag');
+
+      function renderFilterBar() {
+        var lang = Site.getLang();
+        var allLabel = lang === 'en' ? 'All' : 'Alles';
+        var html = '<button class="tag' + (activeTag === null ? ' tag--all active' : ' tag--all') + '" onclick="filterArticles(null)">' + allLabel + '</button>';
+        allTags.forEach(function(tag) {
+          var isActive = activeTag === tag;
+          html += '<button class="tag' + (isActive ? ' active' : '') + '" onclick="filterArticles(\'' + Site.esc(tag) + '\')">' + Site.esc(tag) + '</button>';
+        });
+        document.getElementById('filterBar').innerHTML = html;
+      }
+
+      function renderGrid() {
+        var lang = Site.getLang();
+        var filtered = activeTag
+          ? allArticles.filter(function(a) { return a.tags.indexOf(activeTag) !== -1; })
+          : allArticles;
+
+        // Sort by date descending
+        filtered.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+        var grid = document.getElementById('articleGrid');
+        var empty = document.getElementById('emptyState');
+
+        if (filtered.length === 0) {
+          grid.style.display = 'none';
+          empty.style.display = 'block';
+        } else {
+          grid.style.display = '';
+          empty.style.display = 'none';
+        }
+
+        var readLabel = lang === 'en' ? 'min read' : 'min leestijd';
+
+        grid.innerHTML = filtered.map(function(a) {
+          var title = lang === 'en' ? a.title_en : a.title_nl;
+          var sub = lang === 'en' ? a.subtitle_en : a.subtitle_nl;
+          var tagsHTML = a.tags.map(function(tag) {
+            return '<span class="tag">' + Site.esc(tag) + '</span>';
+          }).join('');
+
+          var articlesPath = lang === 'en' ? '/en/articles/' : '/articles/';
+          return '<a href="' + articlesPath + a.slug + '/" class="card card__link">' +
+            '<div class="card__label">~' + a.readingTime + ' ' + readLabel + (a.date ? ' · ' + a.date : '') + '</div>' +
+            '<h3 class="card__title">' + Site.esc(title) + '</h3>' +
+            '<p class="card__desc">' + Site.esc(sub) + '</p>' +
+            '<div class="card__tags">' + tagsHTML + '</div>' +
+          '</a>';
+        }).join('');
+      }
+
+      // Global function for onclick
+      window.filterArticles = function(tag) {
+        activeTag = tag;
+        renderFilterBar();
+        renderGrid();
+        // Update URL without reload
+        var url = new URL(window.location);
+        if (tag) { url.searchParams.set('tag', tag); }
+        else { url.searchParams.delete('tag'); }
+        history.replaceState(null, '', url);
+      };
+
+      // Load articles
+      fetch('/articles/index.json')
+        .then(function(r) { return r.json(); })
+        .then(function(articles) {
+          allArticles = articles;
+
+          // Collect all unique tags
+          var tagSet = {};
+          articles.forEach(function(a) {
+            (a.tags || []).forEach(function(tag) { tagSet[tag] = true; });
+          });
+          allTags = Object.keys(tagSet).sort();
+
+          renderFilterBar();
+          renderGrid();
+        })
+        .catch(function(err) {
+          console.error('Failed to load articles:', err);
+          document.getElementById('articleGrid').innerHTML =
+            '<p style="color:var(--text-muted);">Could not load articles.</p>';
+        });
+
+      // Re-render on language change
+      document.addEventListener('langChanged', function() {
+        renderFilterBar();
+        renderGrid();
+      });
+
+    })();
+  </script>
+
+  <script src="/assets/js/tracking.js"></script>
+</body>
+</html>

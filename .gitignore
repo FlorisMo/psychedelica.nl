@@ -2,3 +2,6 @@ node_modules/
 .prerender-cache.json
 .DS_Store
 .lighthouseci/
+
+# Ephemeral working prompts (deleted after the run that uses them)
+psychedelica-prompt-*.md

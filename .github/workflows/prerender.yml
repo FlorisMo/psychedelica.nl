@@ -48,12 +48,21 @@ jobs:
             sleep 1
           done
 
-      - name: Lighthouse CI
+      - name: Lighthouse CI (desktop)
         uses: treosh/lighthouse-ci-action@v11
         with:
           urls: |
-            http://localhost:8080/nl/articles/misvattingen-over-ayahuasca/
+            http://localhost:8080/articles/misvattingen-over-ayahuasca/
           configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Lighthouse CI (mobile)
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:8080/articles/misvattingen-over-ayahuasca/
+          configPath: ./lighthouserc.mobile.json
           uploadArtifacts: true
           temporaryPublicStorage: true
 

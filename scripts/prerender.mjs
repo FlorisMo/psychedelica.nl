@@ -24,16 +24,29 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
-import { renderArticle, DEFAULT_BASE_URL } from './templates/article.mjs';
+import {
+  renderArticle,
+  DEFAULT_BASE_URL,
+  paragraphsToPlainText,
+  pickField,
+  pickLangArray,
+  langPrefix,
+  homeUrl,
+  listingUrl,
+  articleUrl,
+} from './templates/article.mjs';
+import { renderPage } from './templates/page.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 const ARTICLES_DIR = path.join(ROOT, 'articles');
-const OUT_NL = path.join(ROOT, 'nl', 'articles');
+const OUT_NL = path.join(ROOT, 'articles');
 const OUT_EN = path.join(ROOT, 'en', 'articles');
-const OUT_LEGACY = path.join(ROOT, 'articles');
+const PAGE_SOURCES_DIR = path.join(__dirname, 'templates', 'pages');
+const ARTICLES_INDEX = path.join(ROOT, 'articles', 'index.json');
 const CACHE_FILE = path.join(ROOT, '.prerender-cache.json');
 
 const BASE_URL = process.env.SITE_BASE_URL || DEFAULT_BASE_URL;
@@ -65,6 +78,28 @@ async function readJsonSafe(file) {
 
 async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+}
+
+/**
+ * Return the ISO-8601 timestamp of the last commit that touched the given
+ * file. Falls back to `null` when outside a git checkout or when the file has
+ * no commit history yet (fresh add, un-committed local edit). Callers treat
+ * null as "use the content.js `meta.date` instead".
+ *
+ * Pure: same repo state → same output → deterministic build output.
+ */
+function gitLastModified(file) {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', file], {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf8',
+    });
+    const iso = out.trim();
+    return iso || null;
+  } catch {
+    return null;
+  }
 }
 
 async function writeIfChanged(file, content) {
@@ -146,33 +181,21 @@ async function discoverExtraScripts(slug) {
   return scripts;
 }
 
-/* ------------------------------ legacy redirect stub ------------------------------ */
-
-function legacyStubHtml(slug) {
-  const target = `/nl/articles/${slug}/`;
-  return `<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<title>Redirecting…</title>
-<meta name="robots" content="noindex, follow">
-<link rel="canonical" href="${BASE_URL}${target}">
-<meta http-equiv="refresh" content="0; url=${target}">
-<script>window.location.replace(${JSON.stringify(target)});</script>
-</head>
-<body>
-<p>This article has moved to <a href="${target}">${BASE_URL}${target}</a>.</p>
-</body>
-</html>
-`;
-}
-
 /* ------------------------------ sitemap ------------------------------ */
 
 function buildSitemap(articles) {
+  // Per-language URLs are the canonical entries. NL lives at the root
+  // (no /nl/ prefix), EN under /en/. No redirect stubs exist so nothing
+  // needs to be excluded.
+  const nlHome = homeUrl('nl', BASE_URL);
+  const enHome = homeUrl('en', BASE_URL);
+  const nlList = listingUrl('nl', BASE_URL);
+  const enList = listingUrl('en', BASE_URL);
   const staticUrls = [
-    { loc: `${BASE_URL}/`, priority: '1.0', changefreq: 'weekly', langs: { nl: `${BASE_URL}/`, en: `${BASE_URL}/en/` } },
-    { loc: `${BASE_URL}/artikelen/`, priority: '0.8', changefreq: 'weekly', langs: { nl: `${BASE_URL}/artikelen/`, en: `${BASE_URL}/en/articles/` } },
+    { loc: nlHome, priority: '1.0', changefreq: 'weekly', langs: { nl: nlHome, en: enHome } },
+    { loc: enHome, priority: '1.0', changefreq: 'weekly', langs: { nl: nlHome, en: enHome } },
+    { loc: nlList, priority: '0.8', changefreq: 'weekly', langs: { nl: nlList, en: enList } },
+    { loc: enList, priority: '0.8', changefreq: 'weekly', langs: { nl: nlList, en: enList } },
   ];
 
   const xmlEscape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -201,8 +224,8 @@ function buildSitemap(articles) {
   }
 
   for (const a of articles) {
-    const nlUrl = `${BASE_URL}/nl/articles/${a.slug}/`;
-    const enUrl = `${BASE_URL}/en/articles/${a.slug}/`;
+    const nlUrl = articleUrl(a.slug, 'nl', BASE_URL);
+    const enUrl = articleUrl(a.slug, 'en', BASE_URL);
     const alts = [
       ['nl', nlUrl],
       ['en', enUrl],
@@ -218,6 +241,58 @@ function buildSitemap(articles) {
 ${blocks.join('\n')}
 </urlset>
 `;
+}
+
+/* ------------------------------ llms.txt ------------------------------ */
+
+/**
+ * llmstxt.org convention: English body, H1 site name, a short tagline, and
+ * one list entry per resource. Lists every article in both /nl/ and /en/ with
+ * a one-sentence English description sourced from the EN subtitle (or the
+ * first line of the EN intro, truncated to ~140 chars).
+ */
+function buildLlmsTxt(articles) {
+  const oneLine = (data) => {
+    const meta = data.meta || {};
+    const candidates = [
+      pickField(meta, 'subtitle', 'en'),
+      paragraphsToPlainText(pickLangArray(data, 'intro', 'en'), 'en'),
+      paragraphsToPlainText(pickLangArray(data, 'preamble', 'en'), 'en'),
+    ];
+    for (const c of candidates) {
+      const s = (c || '').trim().replace(/\s+/g, ' ');
+      if (s) return s.length > 140 ? s.slice(0, 137).trimEnd() + '…' : s;
+    }
+    return '';
+  };
+
+  const lines = [];
+  lines.push('# Psychedelica.nl');
+  lines.push('');
+  lines.push(
+    '> Honest, no-nonsense knowledge about psychedelics for the Dutch public. Science, harm reduction, and clear answers in NL and EN.'
+  );
+  lines.push('');
+
+  lines.push('## Dutch articles');
+  lines.push('');
+  for (const a of articles) {
+    const titleNl = pickField(a.data.meta || {}, 'title', 'nl') || a.slug;
+    const desc = oneLine(a.data);
+    lines.push(`- [${titleNl}](${articleUrl(a.slug, 'nl', BASE_URL)}): ${desc}`);
+  }
+  lines.push('');
+
+  lines.push('## English articles');
+  lines.push('');
+  for (const a of articles) {
+    const titleEn = pickField(a.data.meta || {}, 'title', 'en') || a.slug;
+    const desc = oneLine(a.data);
+    lines.push(`- [${titleEn}](${articleUrl(a.slug, 'en', BASE_URL)}): ${desc}`);
+  }
+  lines.push('');
+
+  return lines.join('\n');
 }
 
 /* ------------------------------ main ------------------------------ */
@@ -259,20 +334,31 @@ async function main() {
       continue;
     }
 
+    // dateModified: git commit timestamp of the most recent change to
+    // content.js. Falls back to meta.date outside a git checkout.
+    const dateModified = gitLastModified(contentPath) || data.meta.date;
+
     const articleMeta = {
       slug,
       date: data.meta.date,
+      dateModified,
       contentHash,
+      data,
     };
     builtArticles.push(articleMeta);
 
     const prev = cache.articles[slug];
     const outputsExist =
       existsSync(path.join(OUT_NL, slug, 'index.html')) &&
-      existsSync(path.join(OUT_EN, slug, 'index.html')) &&
-      existsSync(path.join(OUT_LEGACY, slug, 'index.html'));
+      existsSync(path.join(OUT_EN, slug, 'index.html'));
 
-    if (cacheValid && prev && prev.contentHash === contentHash && outputsExist) {
+    if (
+      cacheValid &&
+      prev &&
+      prev.contentHash === contentHash &&
+      prev.dateModified === dateModified &&
+      outputsExist
+    ) {
       skipped++;
       continue;
     }
@@ -284,29 +370,78 @@ async function main() {
 
     // Render NL + EN
     for (const lang of ['nl', 'en']) {
-      const html = renderArticle(data, lang, { slug, baseUrl: BASE_URL, extraScripts });
+      const html = renderArticle(data, lang, {
+        slug,
+        baseUrl: BASE_URL,
+        extraScripts,
+        dateModified,
+      });
       const outFile = path.join(lang === 'nl' ? OUT_NL : OUT_EN, slug, 'index.html');
       if (await writeIfChanged(outFile, html)) writes++;
     }
 
-    // Legacy redirect stub (plain folder at /articles/<slug>/)
-    const stub = legacyStubHtml(slug);
-    const legacyFile = path.join(OUT_LEGACY, slug, 'index.html');
-    if (await writeIfChanged(legacyFile, stub)) writes++;
-
     log(`[prerender] built ${slug}`);
   }
 
-  // Sitemap — always regenerate (it's trivially small, input covers all slugs)
-  const articleList = builtArticles.map((a) => ({ slug: a.slug, date: a.date }));
+  // Sitemap — always regenerate (it's trivially small, input covers all slugs).
+  // `lastmod` tracks the git-sourced dateModified so crawlers see fresh edits
+  // without needing content.js `meta.date` to be manually bumped.
+  const articleList = builtArticles.map((a) => ({
+    slug: a.slug,
+    date: (a.dateModified || a.date || '').slice(0, 10),
+  }));
   articleList.sort((a, b) => a.slug.localeCompare(b.slug));
   const sitemap = buildSitemap(articleList);
   if (await writeIfChanged(path.join(ROOT, 'sitemap.xml'), sitemap)) writes++;
 
+  // llms.txt — always regenerate (small, input is the union of all articles)
+  const llmsList = [...builtArticles].sort((a, b) => a.slug.localeCompare(b.slug));
+  const llms = buildLlmsTxt(llmsList);
+  if (await writeIfChanged(path.join(ROOT, 'llms.txt'), llms)) writes++;
+
+  // Per-language homepages + article listings. Sources are bilingual
+  // HTML with [data-lang] duplicates; the build splits them into
+  // language-specific pages. NL is the default language and lives at
+  // the root of the site; EN lives under /en/. No redirect stubs.
+  const articlesIndex = JSON.parse(await readFile(ARTICLES_INDEX, 'utf8'));
+  const homeSource = await readFile(
+    path.join(PAGE_SOURCES_DIR, 'home.source.html'),
+    'utf8'
+  );
+  const listingSource = await readFile(
+    path.join(PAGE_SOURCES_DIR, 'listing.source.html'),
+    'utf8'
+  );
+
+  for (const lang of ['nl', 'en']) {
+    const home = renderPage(homeSource, lang, {
+      pageId: 'home',
+      articles: articlesIndex,
+      baseUrl: BASE_URL,
+    });
+    const homeFile = path.join(ROOT, langPrefix(lang).slice(1), 'index.html');
+    if (await writeIfChanged(homeFile, home)) writes++;
+
+    const listing = renderPage(listingSource, lang, {
+      pageId: 'listing',
+      articles: articlesIndex,
+      baseUrl: BASE_URL,
+    });
+    const listingFile = path.join(
+      ROOT,
+      langPrefix(lang).slice(1),
+      'articles',
+      'index.html'
+    );
+    if (await writeIfChanged(listingFile, listing)) writes++;
+  }
+
   // Persist cache
   const newCache = {
     templateHash,
-    articles: Object.fromEntries(builtArticles.map((a) => [a.slug, { contentHash: a.contentHash }])),
+    articles: Object.fromEntries(
+      builtArticles.map((a) => [a.slug, { contentHash: a.contentHash, dateModified: a.dateModified }])
+    ),
   };
   await writeFile(CACHE_FILE, JSON.stringify(newCache, null, 2), 'utf8');
 

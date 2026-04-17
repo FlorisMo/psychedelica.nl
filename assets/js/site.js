@@ -71,47 +71,40 @@ var Site = (function() {
     return d.innerHTML;
   }
 
-  /* URL is the source of truth for language on pre-rendered article pages.
-     For /nl/articles/<slug>/ and /en/articles/<slug>/ we read lang from
-     the path. For all other pages we fall back to localStorage. */
-  function articleLangFromPath() {
+  /* URL layout: NL is the default language and lives at the root of
+     the site (no prefix). EN pages live under /en/. The path carries
+     the language signal unambiguously — no localStorage fallback is
+     needed for routed pages. */
+  function langFromPath() {
     try {
-      var m = window.location.pathname.match(/^\/(nl|en)\/articles\//);
-      return m ? m[1] : null;
-    } catch (e) { return null; }
+      return /^\/en(\/|$)/.test(window.location.pathname) ? 'en' : 'nl';
+    } catch (e) { return 'nl'; }
   }
 
   function getLang() {
-    var fromUrl = articleLangFromPath();
-    if (fromUrl) return fromUrl;
-    return localStorage.getItem('psy_lang') || config.defaultLang;
+    return langFromPath();
   }
 
-  /* Sibling URL for the language toggle on article pages — swaps the
-     /nl/ ↔ /en/ prefix, keeps the slug. Returns null if not on an
-     article page. */
-  function siblingArticleUrl(targetLang) {
+  /* Sibling URL for the language toggle — toggles the /en/ prefix
+     on and off. NL: remove /en/; EN: add /en/ in front of the rest. */
+  function siblingUrl(targetLang) {
     try {
-      var m = window.location.pathname.match(/^\/(nl|en)(\/articles\/[^?#]*)$/);
-      if (!m) return null;
-      return '/' + targetLang + m[2] + window.location.search + window.location.hash;
+      var p = window.location.pathname;
+      var q = window.location.search + window.location.hash;
+      if (targetLang === 'nl') {
+        return p.replace(/^\/en(\/|$)/, '/') + q;
+      }
+      if (/^\/en(\/|$)/.test(p)) return p + q;
+      return '/en' + (p === '/' ? '/' : p) + q;
     } catch (e) { return null; }
   }
 
   function setLang(lang) {
-    /* Persist the preference either way so the next page reflects it. */
-    localStorage.setItem('psy_lang', lang);
-
-    /* Article pages: navigate to the sibling URL instead of re-rendering
-       in place, so canonical/hreflang/JSON-LD stay correct per URL. */
-    var sibling = siblingArticleUrl(lang);
-    if (sibling && lang !== articleLangFromPath()) {
-      window.location.href = sibling;
-      return;
-    }
-
-    currentLang = lang;
-    applyLang();
+    /* URL is the source of truth for language. Navigate to the
+       sibling page — never toggle in place. */
+    if (lang === langFromPath()) return;
+    var sibling = siblingUrl(lang);
+    if (sibling) window.location.href = sibling;
   }
 
   function applyLang() {
@@ -154,9 +147,11 @@ var Site = (function() {
      RENDER HEADER
      ------------------------------------------------------- */
   function renderHeader(activePage) {
+    /* NL is at the root of the site, EN under /en/. */
+    var p = currentLang === 'en' ? '/en' : '';
     var navItems = [
-      { key: 'nav_home', href: '/', page: 'home' },
-      { key: 'nav_articles', href: '/artikelen/', page: 'artikelen' },
+      { key: 'nav_home', href: p + '/', page: 'home' },
+      { key: 'nav_articles', href: p + '/articles/', page: 'artikelen' },
       { key: 'nav_about', href: '/over-ons/', page: 'over-ons' },
       { key: 'nav_contact', href: '/contact/', page: 'contact' },
     ];
@@ -177,7 +172,7 @@ var Site = (function() {
 
     var html = '<header class="site-header" id="siteHeader">' +
       '<div class="site-header__inner">' +
-        '<a href="/" class="site-logo">' +
+        '<a href="' + (p || '') + '/" class="site-logo">' +
           logoSVG +
           '<span class="site-logo__text">Psychedelica</span>' +
         '</a>' +
@@ -204,6 +199,7 @@ var Site = (function() {
      ------------------------------------------------------- */
   function renderFooter() {
     var year = new Date().getFullYear();
+    var p = currentLang === 'en' ? '/en' : '';
     var html = '<footer class="site-footer">' +
       '<div class="site-footer__inner">' +
         '<div class="site-footer__top" style="grid-template-columns:1.5fr 1fr;">' +
@@ -214,8 +210,8 @@ var Site = (function() {
           '<div>' +
             '<h2 class="site-footer__heading" data-i18n="footer_pages">' + t('footer_pages') + '</h2>' +
             '<ul class="site-footer__links">' +
-              '<li><a href="/" data-i18n="nav_home">' + t('nav_home') + '</a></li>' +
-              '<li><a href="/artikelen/" data-i18n="nav_articles">' + t('nav_articles') + '</a></li>' +
+              '<li><a href="' + p + '/" data-i18n="nav_home">' + t('nav_home') + '</a></li>' +
+              '<li><a href="' + p + '/articles/" data-i18n="nav_articles">' + t('nav_articles') + '</a></li>' +
               '<li><a href="/over-ons/" data-i18n="nav_about">' + t('nav_about') + '</a></li>' +
               '<li><a href="/contact/" data-i18n="nav_contact">' + t('nav_contact') + '</a></li>' +
             '</ul>' +
