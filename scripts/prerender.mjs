@@ -33,6 +33,7 @@ import {
   pickField,
   pickLangArray,
 } from './templates/article.mjs';
+import { renderPage, buildRedirectStub } from './templates/page.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,8 @@ const ARTICLES_DIR = path.join(ROOT, 'articles');
 const OUT_NL = path.join(ROOT, 'nl', 'articles');
 const OUT_EN = path.join(ROOT, 'en', 'articles');
 const OUT_LEGACY = path.join(ROOT, 'articles');
+const PAGE_SOURCES_DIR = path.join(__dirname, 'templates', 'pages');
+const ARTICLES_INDEX = path.join(ROOT, 'articles', 'index.json');
 const CACHE_FILE = path.join(ROOT, '.prerender-cache.json');
 
 const BASE_URL = process.env.SITE_BASE_URL || DEFAULT_BASE_URL;
@@ -199,9 +202,33 @@ function legacyStubHtml(slug) {
 /* ------------------------------ sitemap ------------------------------ */
 
 function buildSitemap(articles) {
+  // Per-language URLs are the canonical entries — root `/` and `/artikelen/`
+  // are redirect stubs and must not appear as indexable destinations.
   const staticUrls = [
-    { loc: `${BASE_URL}/`, priority: '1.0', changefreq: 'weekly', langs: { nl: `${BASE_URL}/`, en: `${BASE_URL}/en/` } },
-    { loc: `${BASE_URL}/artikelen/`, priority: '0.8', changefreq: 'weekly', langs: { nl: `${BASE_URL}/artikelen/`, en: `${BASE_URL}/en/articles/` } },
+    {
+      loc: `${BASE_URL}/nl/`,
+      priority: '1.0',
+      changefreq: 'weekly',
+      langs: { nl: `${BASE_URL}/nl/`, en: `${BASE_URL}/en/` },
+    },
+    {
+      loc: `${BASE_URL}/en/`,
+      priority: '1.0',
+      changefreq: 'weekly',
+      langs: { nl: `${BASE_URL}/nl/`, en: `${BASE_URL}/en/` },
+    },
+    {
+      loc: `${BASE_URL}/nl/articles/`,
+      priority: '0.8',
+      changefreq: 'weekly',
+      langs: { nl: `${BASE_URL}/nl/articles/`, en: `${BASE_URL}/en/articles/` },
+    },
+    {
+      loc: `${BASE_URL}/en/articles/`,
+      priority: '0.8',
+      changefreq: 'weekly',
+      langs: { nl: `${BASE_URL}/nl/articles/`, en: `${BASE_URL}/en/articles/` },
+    },
   ];
 
   const xmlEscape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -410,6 +437,50 @@ async function main() {
   const llmsList = [...builtArticles].sort((a, b) => a.slug.localeCompare(b.slug));
   const llms = buildLlmsTxt(llmsList);
   if (await writeIfChanged(path.join(ROOT, 'llms.txt'), llms)) writes++;
+
+  // Per-language homepages + article listings. Sources are bilingual HTML
+  // with [data-lang] duplicates; the build splits them into language-specific
+  // pages so each URL has a canonical language and a self-referencing
+  // canonical + hreflang trio.
+  const articlesIndex = JSON.parse(await readFile(ARTICLES_INDEX, 'utf8'));
+  const homeSource = await readFile(
+    path.join(PAGE_SOURCES_DIR, 'home.source.html'),
+    'utf8'
+  );
+  const listingSource = await readFile(
+    path.join(PAGE_SOURCES_DIR, 'listing.source.html'),
+    'utf8'
+  );
+
+  for (const lang of ['nl', 'en']) {
+    const home = renderPage(homeSource, lang, {
+      pageId: 'home',
+      articles: articlesIndex,
+      baseUrl: BASE_URL,
+    });
+    if (await writeIfChanged(path.join(ROOT, lang, 'index.html'), home)) writes++;
+
+    const listing = renderPage(listingSource, lang, {
+      pageId: 'listing',
+      articles: articlesIndex,
+      baseUrl: BASE_URL,
+    });
+    if (
+      await writeIfChanged(path.join(ROOT, lang, 'articles', 'index.html'), listing)
+    )
+      writes++;
+  }
+
+  // Root + legacy redirect stubs: bare domain → /nl/, /artikelen/ → /nl/articles/
+  if (await writeIfChanged(path.join(ROOT, 'index.html'), buildRedirectStub('/nl/', BASE_URL)))
+    writes++;
+  if (
+    await writeIfChanged(
+      path.join(ROOT, 'artikelen', 'index.html'),
+      buildRedirectStub('/nl/articles/', BASE_URL)
+    )
+  )
+    writes++;
 
   // Persist cache
   const newCache = {

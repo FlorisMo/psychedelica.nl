@@ -342,6 +342,143 @@ async function validateSitemap(v, slugs) {
       else v.ok();
     }
   }
+  // Per-language homepage + listing must be indexable entries.
+  for (const loc of [
+    `${BASE_URL}/nl/`,
+    `${BASE_URL}/en/`,
+    `${BASE_URL}/nl/articles/`,
+    `${BASE_URL}/en/articles/`,
+  ]) {
+    if (!txt.includes(`<loc>${loc}</loc>`)) v.fail(where, `missing <loc>${loc}</loc>`);
+    else v.ok();
+  }
+  // Root + /artikelen/ are redirect stubs and must NOT be indexable.
+  for (const stubLoc of [`${BASE_URL}/`, `${BASE_URL}/artikelen/`]) {
+    if (txt.includes(`<loc>${stubLoc}</loc>`)) {
+      v.fail(where, `redirect stub "${stubLoc}" must not appear as a <loc>`);
+    } else v.ok();
+  }
+}
+
+/* Per-language page (homepage or listing) — asserts the same
+   crawler-visible invariants as articles: canonical matches URL,
+   hreflang trio (language-only), <html lang>, title + description,
+   and at least one JSON-LD block so Site.seo()'s skip-if-prerendered
+   guard engages. */
+function validateLangPage({ v, html, where, lang, expectedCanonical, nlUrl, enUrl }) {
+  const htmlLang = extractHtmlLang(html);
+  if (htmlLang !== lang) v.fail(where, `<html lang> expected "${lang}", got "${htmlLang}"`);
+  else v.ok();
+
+  const canonical = extractCanonical(html);
+  if (canonical !== expectedCanonical) {
+    v.fail(where, `canonical expected "${expectedCanonical}", got "${canonical}"`);
+  } else v.ok();
+
+  const alts = extractHreflang(html);
+  const byLang = Object.fromEntries(alts.map((a) => [a.hreflang, a.href]));
+  for (const required of ['nl', 'en', 'x-default']) {
+    if (!byLang[required]) v.fail(where, `missing hreflang "${required}" alternate`);
+    else v.ok();
+  }
+  if (byLang.nl && byLang.nl !== nlUrl) v.fail(where, `hreflang=nl href wrong: ${byLang.nl}`);
+  else if (byLang.nl) v.ok();
+  if (byLang.en && byLang.en !== enUrl) v.fail(where, `hreflang=en href wrong: ${byLang.en}`);
+  else if (byLang.en) v.ok();
+  if (byLang['x-default'] && byLang['x-default'] !== enUrl)
+    v.fail(where, `hreflang=x-default href wrong: ${byLang['x-default']}`);
+  else if (byLang['x-default']) v.ok();
+
+  const title = extractTitle(html);
+  if (!title) v.fail(where, `<title> is empty`);
+  else v.ok();
+  const desc = extractMetaDescription(html);
+  if (!desc) v.fail(where, `<meta name="description"> is empty`);
+  else v.ok();
+
+  const jsonLds = extractJsonLdBlocks(html);
+  if (jsonLds.length < 1) v.fail(where, `expected >= 1 JSON-LD block, got ${jsonLds.length}`);
+  else v.ok();
+  if (jsonLds.some((j) => j.__invalid)) v.fail(where, `unparseable JSON-LD block`);
+  else v.ok();
+}
+
+async function validateLangPages(v, slugs) {
+  const pages = [
+    { lang: 'nl', rel: 'nl/index.html', where: '/nl/', canonical: `${BASE_URL}/nl/` },
+    { lang: 'en', rel: 'en/index.html', where: '/en/', canonical: `${BASE_URL}/en/` },
+    {
+      lang: 'nl',
+      rel: 'nl/articles/index.html',
+      where: '/nl/articles/',
+      canonical: `${BASE_URL}/nl/articles/`,
+    },
+    {
+      lang: 'en',
+      rel: 'en/articles/index.html',
+      where: '/en/articles/',
+      canonical: `${BASE_URL}/en/articles/`,
+    },
+  ];
+  for (const page of pages) {
+    const file = path.join(ROOT, page.rel);
+    if (!existsSync(file)) {
+      v.fail(page.where, `built file missing: ${file}`);
+      continue;
+    }
+    const html = await readFile(file, 'utf8');
+    const nlUrl = page.where.endsWith('/articles/')
+      ? `${BASE_URL}/nl/articles/`
+      : `${BASE_URL}/nl/`;
+    const enUrl = page.where.endsWith('/articles/')
+      ? `${BASE_URL}/en/articles/`
+      : `${BASE_URL}/en/`;
+    validateLangPage({
+      v,
+      html,
+      where: page.where,
+      lang: page.lang,
+      expectedCanonical: page.canonical,
+      nlUrl,
+      enUrl,
+    });
+
+    // Listing + homepage must have at least one static article card
+    // link pointing into the current language tree, so crawlers see
+    // the article list without needing JS.
+    const expectedCardHref = `/${page.lang}/articles/`;
+    if (!html.includes(`href="${expectedCardHref}`)) {
+      v.fail(page.where, `no static article card link starting with "${expectedCardHref}"`);
+    } else v.ok();
+  }
+}
+
+async function validateRootRedirect(v) {
+  const file = path.join(ROOT, 'index.html');
+  const where = '/';
+  if (!existsSync(file)) {
+    v.fail(where, 'root index.html missing — bare domain would 404');
+    return;
+  }
+  const html = await readFile(file, 'utf8');
+  if (!/http-equiv\s*=\s*["']refresh["']/i.test(html)) {
+    v.fail(where, 'root index.html is not a meta-refresh redirect');
+  } else v.ok();
+  if (!html.includes('url=/nl/')) {
+    v.fail(where, 'root redirect target is not /nl/');
+  } else v.ok();
+  if (extractCanonical(html) !== `${BASE_URL}/nl/`) {
+    v.fail(where, 'root canonical should point to /nl/');
+  } else v.ok();
+  const legacy = path.join(ROOT, 'artikelen', 'index.html');
+  if (!existsSync(legacy)) {
+    v.fail('/artikelen/', 'legacy redirect stub missing');
+  } else {
+    const legacyHtml = await readFile(legacy, 'utf8');
+    if (!/http-equiv\s*=\s*["']refresh["']/i.test(legacyHtml) || !legacyHtml.includes('url=/nl/articles/')) {
+      v.fail('/artikelen/', 'stub must meta-refresh to /nl/articles/');
+    } else v.ok();
+  }
 }
 
 async function main() {
@@ -355,6 +492,8 @@ async function main() {
   await validateRobots(v);
   await validateLlmsTxt(v, slugs);
   await validateSitemap(v, slugs);
+  await validateLangPages(v, slugs);
+  await validateRootRedirect(v);
 
   for (const slug of slugs) {
     const source = await readFile(path.join(ARTICLES_DIR, slug, 'content.js'), 'utf8');
