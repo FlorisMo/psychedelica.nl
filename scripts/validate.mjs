@@ -243,6 +243,105 @@ function validateFile({ v, html, slug, lang, data }) {
       `word count ${gotWords} is only ${(ratio * 100).toFixed(1)}% of expected ${expectedWords} (min ${WORD_COUNT_MIN_RATIO * 100}%)`
     );
   } else v.ok();
+
+  // 7. Visible "Laatst bijgewerkt" (NL) / "Last updated" (EN) label present
+  const visibleLabel = lang === 'nl' ? 'Laatst bijgewerkt' : 'Last updated';
+  if (!html.includes(visibleLabel)) {
+    v.fail(where, `visible "${visibleLabel}" label missing from hero`);
+  } else v.ok();
+
+  // 8. <time datetime="…"> in the hero must equal BlogPosting.dateModified
+  const timeMatch = html.match(/<time\b[^>]*datetime\s*=\s*"([^"]+)"[^>]*>/i);
+  if (!timeMatch) {
+    v.fail(where, '<time datetime> missing from hero');
+  } else {
+    const bp = jsonLds.find((j) => j && j['@type'] === 'BlogPosting');
+    if (bp && bp.dateModified && bp.dateModified !== timeMatch[1]) {
+      v.fail(where, `<time datetime="${timeMatch[1]}"> does not match BlogPosting.dateModified "${bp.dateModified}"`);
+    } else v.ok();
+  }
+}
+
+/* ---- site-level file asserts ---- */
+
+const REQUIRED_ROBOTS_AGENTS = [
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'Claude-User',
+  'Claude-SearchBot',
+  'PerplexityBot',
+  'Perplexity-User',
+  'GPTBot',
+  'ClaudeBot',
+  'Google-Extended',
+  'Applebot-Extended',
+  'Meta-ExternalAgent',
+  'CCBot',
+  'Bytespider',
+  'cohere-ai',
+];
+
+const DEPRECATED_ROBOTS_AGENTS = ['anthropic-ai', 'Claude-Web'];
+
+async function validateRobots(v) {
+  const file = path.join(ROOT, 'robots.txt');
+  const where = '/robots.txt';
+  if (!existsSync(file)) {
+    v.fail(where, 'file missing at site root');
+    return;
+  }
+  const txt = await readFile(file, 'utf8');
+  for (const agent of REQUIRED_ROBOTS_AGENTS) {
+    const re = new RegExp(`^User-agent:\\s*${agent}\\s*$`, 'mi');
+    if (!re.test(txt)) v.fail(where, `missing canonical 2026 entry "User-agent: ${agent}"`);
+    else v.ok();
+  }
+  for (const agent of DEPRECATED_ROBOTS_AGENTS) {
+    const re = new RegExp(`^User-agent:\\s*${agent}\\s*$`, 'mi');
+    if (re.test(txt)) v.fail(where, `deprecated entry "User-agent: ${agent}" present — remove`);
+    else v.ok();
+  }
+  if (!/^Sitemap:\s*https:\/\/psychedelica\.nl\/sitemap\.xml\s*$/mi.test(txt)) {
+    v.fail(where, 'missing "Sitemap: https://psychedelica.nl/sitemap.xml" directive');
+  } else v.ok();
+}
+
+async function validateLlmsTxt(v, slugs) {
+  const file = path.join(ROOT, 'llms.txt');
+  const where = '/llms.txt';
+  if (!existsSync(file)) {
+    v.fail(where, 'file missing at site root — build did not emit it');
+    return;
+  }
+  const txt = await readFile(file, 'utf8');
+  if (!/^#\s*Psychedelica\.nl\s*$/mi.test(txt)) {
+    v.fail(where, 'missing "# Psychedelica.nl" H1');
+  } else v.ok();
+  for (const slug of slugs) {
+    const nlUrl = `${BASE_URL}/nl/articles/${slug}/`;
+    const enUrl = `${BASE_URL}/en/articles/${slug}/`;
+    if (!txt.includes(nlUrl)) v.fail(where, `missing link to ${nlUrl}`);
+    else v.ok();
+    if (!txt.includes(enUrl)) v.fail(where, `missing link to ${enUrl}`);
+    else v.ok();
+  }
+}
+
+async function validateSitemap(v, slugs) {
+  const file = path.join(ROOT, 'sitemap.xml');
+  const where = '/sitemap.xml';
+  if (!existsSync(file)) {
+    v.fail(where, 'file missing at site root');
+    return;
+  }
+  const txt = await readFile(file, 'utf8');
+  for (const slug of slugs) {
+    for (const lang of ['nl', 'en']) {
+      const loc = `${BASE_URL}/${lang}/articles/${slug}/`;
+      if (!txt.includes(`<loc>${loc}</loc>`)) v.fail(where, `missing <loc>${loc}</loc>`);
+      else v.ok();
+    }
+  }
 }
 
 async function main() {
@@ -252,6 +351,10 @@ async function main() {
     console.error('validate: no articles found');
     process.exit(1);
   }
+
+  await validateRobots(v);
+  await validateLlmsTxt(v, slugs);
+  await validateSitemap(v, slugs);
 
   for (const slug of slugs) {
     const source = await readFile(path.join(ARTICLES_DIR, slug, 'content.js'), 'utf8');
