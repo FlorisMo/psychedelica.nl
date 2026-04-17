@@ -14,6 +14,8 @@
      opts = { slug, baseUrl, siteName }
    ============================================================ */
 
+import { DEFAULT_AUTHOR } from '../authors/floris-moerkamp.mjs';
+
 const CHEVRON_SVG =
   '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
@@ -22,6 +24,39 @@ const BACK_TO_TOP_SVG =
 
 export const DEFAULT_BASE_URL = 'https://psychedelica.nl';
 export const DEFAULT_SITE_NAME = 'Psychedelica.nl';
+
+/* Substance tags that trigger the harm-reduction disclaimer block
+   on an article's rendered HTML. Per the YMYL policy any article
+   whose meta.tags intersects this set is a YMYL substance article. */
+const SUBSTANCE_TAGS = new Set([
+  'ayahuasca',
+  'psilocybin',
+  'psilocybine',
+  'paddenstoelen',
+  'paddo',
+  'paddos',
+  'truffels',
+  'truffel',
+  'lsd',
+  'dmt',
+  'mdma',
+  'ketamine',
+  '2c-b',
+  '2cb',
+  'mescaline',
+  'peyote',
+  'san pedro',
+  'san-pedro',
+  'ibogaine',
+  'iboga',
+  '5-meo-dmt',
+  '5meodmt',
+]);
+
+function isSubstanceArticle(meta) {
+  const tags = Array.isArray(meta && meta.tags) ? meta.tags : [];
+  return tags.some((t) => SUBSTANCE_TAGS.has(String(t).toLowerCase()));
+}
 
 /* URL layout: NL is the primary language and lives at the root of
    the site (no /nl/ prefix). EN lives under /en/. Every URL helper
@@ -66,6 +101,19 @@ const I18N = {
     articles: 'Artikelen',
     org_desc: 'Jouw gids in de wereld van psychedelica. Wetenschap, risicobeperking en eerlijke informatie.',
     last_updated: 'Laatst bijgewerkt',
+    byline_intro: 'Door',
+    faq: 'Veelgestelde vragen',
+    harm_reduction_heading: 'Harm reduction',
+    harm_reduction_body:
+      'Deze informatie is bedoeld voor educatie en harm reduction, niet als advies om psychedelica te gebruiken. Gebruik altijd met mate, check interacties met medicijnen, en zorg voor een veilige setting met mensen die je vertrouwt. In geval van een medische noodsituatie: bel',
+    harm_reduction_tel_label: '112',
+    harm_reduction_for_help: 'Voor persoonlijk advies of zorg:',
+    harm_reduction_links: [
+      { href: 'https://jellinek.nl/', name: 'Jellinek', desc: 'verslavingszorg' },
+      { href: 'https://trimbos.nl/', name: 'Trimbos-instituut', desc: 'mentale gezondheid' },
+      { href: 'https://unity.nl/', name: 'Unity', desc: 'peer education op evenementen' },
+      { href: 'https://mainline.nl/', name: 'Mainline', desc: 'harm reduction magazine en services' },
+    ],
   },
   en: {
     conclusion: 'Conclusion',
@@ -77,6 +125,19 @@ const I18N = {
     articles: 'Articles',
     org_desc: 'Your guide to the world of psychedelics. Science, harm reduction and honest information.',
     last_updated: 'Last updated',
+    byline_intro: 'By',
+    faq: 'Frequently asked questions',
+    harm_reduction_heading: 'Harm reduction',
+    harm_reduction_body:
+      'This information is for education and harm reduction, not advice to use psychedelics. Always use in moderation, check medication interactions, and ensure a safe setting with people you trust. In a medical emergency in the Netherlands: call',
+    harm_reduction_tel_label: '112',
+    harm_reduction_for_help: 'For personal advice or care:',
+    harm_reduction_links: [
+      { href: 'https://jellinek.nl/', name: 'Jellinek', desc: 'addiction services' },
+      { href: 'https://trimbos.nl/', name: 'Trimbos Institute', desc: 'mental health' },
+      { href: 'https://unity.nl/', name: 'Unity', desc: 'peer education at events' },
+      { href: 'https://mainline.nl/', name: 'Mainline', desc: 'harm reduction magazine and services' },
+    ],
   },
 };
 
@@ -110,6 +171,35 @@ function pickBiLit(obj, lang) {
 function absUrl(pathOrUrl, baseUrl) {
   if (!pathOrUrl) return baseUrl;
   return /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : baseUrl + pathOrUrl;
+}
+
+/* True when href points at a non-psychedelica.nl origin. Relative
+   hrefs, tel:/mailto: schemes, and same-host URLs all return false. */
+function isExternalHref(href) {
+  if (!href) return false;
+  const s = String(href).trim();
+  if (!/^https?:\/\//i.test(s)) return false;
+  try {
+    const u = new URL(s);
+    const host = u.hostname.toLowerCase();
+    return host !== 'psychedelica.nl' && !host.endsWith('.psychedelica.nl');
+  } catch {
+    return false;
+  }
+}
+
+/* Render a canonical <a> element. If href points off-domain we
+   append rel="external" per the YMYL/GEO outbound-link standard.
+   Any rel value on the caller is preserved and merged. */
+function renderAnchor(href, text, { rel } = {}) {
+  const parts = [];
+  const external = isExternalHref(href);
+  const relSet = new Set();
+  if (rel) String(rel).split(/\s+/).filter(Boolean).forEach((r) => relSet.add(r));
+  if (external) relSet.add('external');
+  const relAttr = relSet.size ? ` rel="${esc(Array.from(relSet).join(' '))}"` : '';
+  parts.push(`<a href="${esc(href)}"${relAttr}>${esc(text)}</a>`);
+  return parts.join('');
 }
 
 /* Convert a paragraph array (strings or {heading_xx,text_xx}) to text.
@@ -338,45 +428,6 @@ ${renderAccordions(ctxAccs, lang)}
   return html;
 }
 
-/* ------------------------------ FAQ entries from data ------------------------------ */
-
-function extractFaqs(data, lang, layout) {
-  const out = [];
-  const push = (q, a) => {
-    const question = (q || '').trim();
-    const answer = (a || '').trim();
-    if (question && answer) out.push({ question, answer });
-  };
-
-  if (layout === 'listicle' && Array.isArray(data.items)) {
-    for (const item of data.items) {
-      push(pickField(item, 'title', lang), paragraphsToPlainText(pickField(item, 'paragraphs', lang), lang));
-    }
-  } else if (layout === 'guide-steps' && Array.isArray(data.steps)) {
-    for (const step of data.steps) {
-      push(pickField(step, 'title', lang), paragraphsToPlainText(pickField(step, 'paragraphs', lang), lang));
-    }
-  } else if ((layout === 'essay' || layout === 'explainer') && Array.isArray(data.sections)) {
-    for (const s of data.sections) {
-      push(pickField(s, 'title', lang), paragraphsToPlainText(pickField(s, 'paragraphs', lang), lang));
-    }
-  }
-
-  // Context accordions contribute FAQs too (guide-steps and explainer)
-  if (data.context && Array.isArray(data.context.accordions)) {
-    for (const a of data.context.accordions) {
-      push(pickField(a, 'title', lang), paragraphsToPlainText(pickField(a, 'paragraphs', lang), lang));
-      if (Array.isArray(a.subAccordions)) {
-        for (const sa of a.subAccordions) {
-          push(pickField(sa, 'title', lang), paragraphsToPlainText(pickField(sa, 'paragraphs', lang), lang));
-        }
-      }
-    }
-  }
-
-  return out;
-}
-
 /* ------------------------------ total word count across article ------------------------------ */
 
 export function computeArticleWordCount(data, lang) {
@@ -432,8 +483,50 @@ export function computeArticleWordCount(data, lang) {
 
 /* ------------------------------ JSON-LD ------------------------------ */
 
+/* Build the Person JSON-LD block from the author record. Paths
+   (url, image) are resolved against baseUrl so the emitted JSON-LD
+   is fully-qualified per schema.org guidance. */
+function buildAuthorPerson(author, baseUrl) {
+  const person = {
+    '@type': 'Person',
+    name: author.name,
+    url: absUrl(author.url, baseUrl),
+  };
+  if (author.jobTitle) person.jobTitle = author.jobTitle;
+  if (author.image) person.image = absUrl(author.image, baseUrl);
+  if (author.affiliation && author.affiliation.name) {
+    person.affiliation = {
+      '@type': 'Organization',
+      name: author.affiliation.name,
+    };
+    if (author.affiliation.url) person.affiliation.url = author.affiliation.url;
+  }
+  if (Array.isArray(author.sameAs) && author.sameAs.length) {
+    person.sameAs = [...author.sameAs];
+  }
+  return person;
+}
+
+/* Extract explicit FAQ entries from content.js. The source of truth
+   is data.faqs_<lang>: an array of {question, answer} objects. If
+   no FAQ array exists, returns []. The HTML section and the FAQPage
+   JSON-LD are both emitted only when this returns a non-empty list,
+   so they can never diverge. */
+function extractExplicitFaqs(data, lang) {
+  const primary = data['faqs_' + lang];
+  const fallback = data.faqs_nl;
+  const arr = Array.isArray(primary) ? primary : Array.isArray(fallback) ? fallback : [];
+  const out = [];
+  for (const f of arr) {
+    const q = (f && (f.question || f.q) || '').toString().trim();
+    const a = (f && (f.answer || f.a) || '').toString().trim();
+    if (q && a) out.push({ question: q, answer: a });
+  }
+  return out;
+}
+
 function buildJsonLd(data, lang, opts) {
-  const { slug, baseUrl, siteName, layout, dateModified } = opts;
+  const { slug, baseUrl, siteName, dateModified, author, faqs } = opts;
   const meta = data.meta || {};
   const urlForLang = (l) => articleUrl(slug, l, baseUrl);
   const canonicalUrl = urlForLang(lang);
@@ -447,11 +540,7 @@ function buildJsonLd(data, lang, opts) {
     datePublished: meta.date,
     dateModified: dateModified || meta.date,
     inLanguage: lang,
-    author: {
-      '@type': 'Organization',
-      name: siteName,
-      url: baseUrl,
-    },
+    author: buildAuthorPerson(author, baseUrl),
     publisher: {
       '@type': 'Organization',
       name: siteName,
@@ -470,19 +559,25 @@ function buildJsonLd(data, lang, opts) {
     wordCount: computeArticleWordCount(data, lang),
   };
 
-  const faqs = extractFaqs(data, lang, layout);
-  const faqPage = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map((f) => ({
-      '@type': 'Question',
-      name: f.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: f.answer,
-      },
-    })),
-  };
+  /* FAQPage JSON-LD emits only when the article carries an explicit
+     faqs_<lang> array. Deriving FAQs from body sections produced
+     misleading structured data (article items aren't questions),
+     so we gate emission on a real, dedicated FAQ block in
+     content.js that also renders visibly in the HTML. */
+  const faqPage = faqs && faqs.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: f.answer,
+          },
+        })),
+      }
+    : null;
 
   const breadcrumbList = {
     '@context': 'https://schema.org',
@@ -495,6 +590,59 @@ function buildJsonLd(data, lang, opts) {
   };
 
   return { blogPosting, faqPage, breadcrumbList };
+}
+
+/* Visible byline for the article hero. Links to the author's
+   /over-ons/ bio page; the link stays even if /over-ons/ is still a
+   placeholder (tracked separately per the YMYL audit). */
+function renderByline(author, lang) {
+  const t = I18N[lang];
+  const tagline = author.byline ? author.byline[lang] || author.byline.nl : '';
+  const name = `<a href="${esc(author.url)}"><strong>${esc(author.name)}</strong></a>`;
+  return `<p class="article-hero__byline">${esc(t.byline_intro)} ${name}${
+    tagline ? ` &mdash; ${esc(tagline)}` : ''
+  }</p>`;
+}
+
+/* Harm-reduction disclaimer aside. Rendered at article foot on
+   substance articles only. Phrasing is canonical per the YMYL/GEO
+   standard — do not edit without updating the policy source. */
+function renderHarmReduction(lang) {
+  const t = I18N[lang];
+  const links = t.harm_reduction_links
+    .map((l) => `<li>${renderAnchor(l.href, l.name)} &mdash; ${esc(l.desc)}</li>`)
+    .join('');
+  const tel = `<a href="tel:112">${esc(t.harm_reduction_tel_label)}</a>`;
+  return `<aside class="callout callout--warning" role="note" id="harm-reduction">
+<h2>${esc(t.harm_reduction_heading)}</h2>
+<p>${esc(t.harm_reduction_body)} ${tel}.</p>
+<p>${esc(t.harm_reduction_for_help)}</p>
+<ul>
+${links}
+</ul>
+</aside>`;
+}
+
+/* Visible FAQ section. Only emitted when content.js carries
+   explicit faqs_<lang> entries. Questions render as h3s so they are
+   parsed both by humans and by the FAQPage JSON-LD extractor. */
+function renderFaqSection(faqs, lang) {
+  if (!faqs || !faqs.length) return '';
+  const t = I18N[lang];
+  const body = faqs
+    .map(
+      (f) => `<div class="faq-item">
+<h3>${esc(f.question)}</h3>
+<p>${esc(f.answer)}</p>
+</div>`
+    )
+    .join('\n');
+  return `<section class="wrapper--narrow" id="faq" aria-labelledby="faq-heading">
+<div style="padding:48px 0 32px;">
+<h2 id="faq-heading">${esc(t.faq)}</h2>
+${body}
+</div>
+</section>`;
 }
 
 /* ------------------------------ main renderer ------------------------------ */
@@ -532,12 +680,22 @@ export function renderArticle(data, lang, opts = {}) {
   const dateModified = opts.dateModified || meta.date || '';
   const modifiedDateOnly = dateModified ? dateModified.slice(0, 10) : '';
 
+  /* Author: the article may override meta.author; default is Floris
+     Moerkamp per the workspace policy. meta.author may be the full
+     record or an object with at least a name — if partial, fields
+     fall back to the default. */
+  const author = meta.author && typeof meta.author === 'object' ? { ...DEFAULT_AUTHOR, ...meta.author } : DEFAULT_AUTHOR;
+
+  const faqs = extractExplicitFaqs(data, lang);
+  const isSubstance = isSubstanceArticle(meta);
+
   const { blogPosting, faqPage, breadcrumbList } = buildJsonLd(data, lang, {
     slug,
     baseUrl,
     siteName,
-    layout,
     dateModified,
+    author,
+    faqs,
   });
 
   // JSON-LD is serialised in a fixed order & form for deterministic output.
@@ -592,8 +750,7 @@ export function renderArticle(data, lang, opts = {}) {
 <meta name="twitter:title" content="${esc(htmlTitle)}">
 <meta name="twitter:description" content="${esc(descriptionSafe)}">
 ${jsonLdBlock(blogPosting)}
-${jsonLdBlock(faqPage)}
-${jsonLdBlock(breadcrumbList)}
+${faqPage ? jsonLdBlock(faqPage) + '\n' : ''}${jsonLdBlock(breadcrumbList)}
 </head>
 <body>
 
@@ -615,6 +772,7 @@ ${heroLabel ? `<div class="hero__label">${esc(heroLabel)}</div>` : ''}
 ${heroMeta}
 ${dateModified ? `<span class="article-hero__updated">${esc(t.last_updated)}: <time datetime="${esc(dateModified)}">${esc(modifiedDateOnly)}</time></span>` : ''}
 </div>
+${renderByline(author, lang)}
 </div>
 </header>
 
@@ -636,6 +794,10 @@ ${body}
 ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
 </div>
 </section>
+
+${renderFaqSection(faqs, lang)}
+
+${isSubstance ? `<div class="wrapper--narrow">${renderHarmReduction(lang)}</div>` : ''}
 
 </article>
 </main>
