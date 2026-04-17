@@ -1777,6 +1777,67 @@ a[data-lang].show { display: inline-flex; }
   .step-title { font-size: 19px; }
 }
 
+/* ============================================================
+   YMYL — visible byline + harm-reduction callout + FAQ section
+
+   The base `a { color: var(--accent) }` rule (brand-500 = #8B5CC8)
+   renders inline text links at 2.41:1 against body text and 4.47:1
+   against page bg — both below WCAG AA. These scoped rules give the
+   new template elements the darker brand-700 (#553680, ~9.5:1 on
+   page bg) plus an underline so `link-in-text-block` passes too.
+   ============================================================ */
+
+.article-hero__byline {
+  margin-top: 16px;
+  color: var(--text-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.article-hero__byline a {
+  color: var(--brand-700);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.article-hero__byline a:hover { color: var(--brand-600); }
+.article-hero__byline a strong { color: inherit; }
+
+.callout {
+  margin: 48px 0 16px;
+  padding: 24px 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--brand-700);
+  border-radius: 8px;
+}
+.callout h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+.callout p { margin: 0 0 12px; color: var(--text-body); }
+.callout ul { margin: 8px 0 0; padding-left: 20px; }
+.callout li { margin-bottom: 6px; color: var(--text-body); }
+.callout a {
+  color: var(--brand-700);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.callout a:hover { color: var(--brand-600); }
+.callout--warning { border-left-color: #B85C00; }
+
+#faq { border-top: 1px solid var(--border); }
+#faq h2 { margin-bottom: 24px; }
+.faq-item { margin-bottom: 24px; }
+.faq-item h3 { margin: 0 0 8px; font-size: 20px; }
+.faq-item p { margin: 0; color: var(--text-body); }
+.faq-item a {
+  color: var(--brand-700);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 @media print {
   .site-header, .progress-bar, .back-to-top, .lang-toggle { display: none !important; }
   .accordion-body { max-height: none !important; opacity: 1 !important; }
