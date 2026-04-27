@@ -104,7 +104,7 @@
 <input type="checkbox" id="site-disclaimer-remember" checked>
 <span>Niet meer tonen</span>
 </label>
-<button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="Sluiten">&times;</button>
+<button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6L18 18M6 18L18 6"/></svg></button>
 </div>
 </aside>
 <noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>
@@ -235,14 +235,24 @@
 (function(){
   var el=document.getElementById('site-disclaimer');
   if(!el)return;
+  var root=document.documentElement;
   var KEY='siteDisclaimerDismissed';
-  try{if(window.localStorage&&localStorage.getItem(KEY)==='1'){el.setAttribute('data-state','hidden');return;}}catch(e){}
-  requestAnimationFrame(function(){requestAnimationFrame(function(){el.setAttribute('data-state','visible');});});
+  function syncHeight(){
+    var visible=el.getAttribute('data-state')==='visible';
+    root.style.setProperty('--disclaimer-height',(visible?el.offsetHeight:0)+'px');
+  }
+  try{if(window.localStorage&&localStorage.getItem(KEY)==='1'){el.setAttribute('data-state','hidden');root.style.setProperty('--disclaimer-height','0px');return;}}catch(e){}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    el.setAttribute('data-state','visible');
+    syncHeight();
+  });});
+  window.addEventListener('resize',syncHeight);
   var btn=document.getElementById('site-disclaimer-close');
   if(btn){btn.addEventListener('click',function(){
     var rem=document.getElementById('site-disclaimer-remember');
     if(rem&&rem.checked){try{if(window.localStorage)localStorage.setItem(KEY,'1');}catch(e){}}
     el.setAttribute('data-state','hidden');
+    root.style.setProperty('--disclaimer-height','0px');
   });}
 })();
 (function(){
