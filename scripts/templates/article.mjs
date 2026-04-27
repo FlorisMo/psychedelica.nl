@@ -653,9 +653,18 @@ function renderSiteDisclaimer(lang) {
 <button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="${esc(t.site_disclaimer_close_aria)}">&times;</button>
 </div>
 </aside>
-<noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>
-<script>
-(function(){
+<noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>`;
+}
+
+/* Behavioural JS for the site-default disclaimer banner. Lives in
+   the end-of-body inline script (not in the aside itself) so the
+   parser doesn't block at the top of <body> — that was a measurable
+   ~150-250ms LCP regression on the simulated mobile profile.
+   The aside renders with data-state="pending" + offscreen transform
+   from CSS, so first paint already shows the page without the
+   banner. This IIFE then promotes it to "visible" via rAF and
+   wires up dismiss + localStorage. */
+const DISCLAIMER_JS = `(function(){
   var el=document.getElementById('site-disclaimer');
   if(!el)return;
   var KEY='siteDisclaimerDismissed';
@@ -667,9 +676,7 @@ function renderSiteDisclaimer(lang) {
     if(rem&&rem.checked){try{if(window.localStorage)localStorage.setItem(KEY,'1');}catch(e){}}
     el.setAttribute('data-state','hidden');
   });}
-})();
-</script>`;
-}
+})();`;
 
 /* Visible FAQ section. Only emitted when content.js carries
    explicit faqs_<lang> entries. Questions render as h3s so they are
@@ -783,7 +790,8 @@ export function renderArticle(data, lang, opts = {}) {
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@300;400&display=swap"></noscript>
 <link rel="stylesheet" href="/assets/css/site.css">
 <meta property="og:site_name" content="${esc(siteName)}">
 <meta property="og:locale" content="${esc(ogLocale)}">
@@ -856,6 +864,7 @@ ${isSubstance ? `<div class="wrapper--narrow">${renderHarmReduction(lang)}</div>
 
 <script src="/assets/js/site.js"></script>
 <script>
+${DISCLAIMER_JS}
 (function(){
   if (typeof Site === 'undefined') return;
   Site.init({ page: 'artikel' });
