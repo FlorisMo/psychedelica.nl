@@ -1826,6 +1826,23 @@ a[data-lang].show { display: inline-flex; }
 .callout a:hover { color: var(--brand-600); }
 .callout--warning { border-left-color: #B85C00; }
 
+/* Site-default disclaimer — rendered on every article foot.
+   Deliberately quieter than .callout: smaller font, muted text,
+   no left accent bar. Findable but not visually loud. */
+.disclaimer--site-default {
+  margin: 40px 0 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.disclaimer--site-default p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
 #faq { border-top: 1px solid var(--border); }
 #faq h2 { margin-bottom: 24px; }
 .faq-item { margin-bottom: 24px; }

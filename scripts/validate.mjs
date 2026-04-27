@@ -335,7 +335,21 @@ function validateFile({ v, html, slug, lang, data }) {
     } else v.ok();
   }
 
-  // 11. Every outbound <a> (non-psychedelica.nl) carries rel="external"
+  // 11. Site-default safety disclaimer present on every article (YMYL).
+  //     Asserts both the anchor (#site-disclaimer) and a lang-specific
+  //     substring of the canonical text so paraphrasing the disclaimer
+  //     in the template breaks the build.
+  if (!/id="site-disclaimer"/.test(html)) {
+    v.fail(where, 'site-default disclaimer aside missing (id="site-disclaimer")');
+  } else v.ok();
+  const disclaimerNeedle = lang === 'nl'
+    ? 'biedt algemene voorlichting en geen medisch advies'
+    : 'provides general information and is not medical advice';
+  if (!html.includes(disclaimerNeedle)) {
+    v.fail(where, `site-default disclaimer canonical text missing (lang=${lang})`);
+  } else v.ok();
+
+  // 12. Every outbound <a> (non-psychedelica.nl) carries rel="external"
   const anchorRe = /<a\b([^>]*)>/gi;
   let am;
   while ((am = anchorRe.exec(html)) !== null) {
