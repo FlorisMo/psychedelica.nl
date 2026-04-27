@@ -117,6 +117,8 @@ const I18N = {
     site_disclaimer_label: 'Disclaimer',
     site_disclaimer_body:
       'Deze website biedt algemene voorlichting en geen medisch advies. Deze site verkoopt geen middelen en beveelt geen gebruik aan. Overleg altijd met een arts over je eigen gezondheid en medicatiegebruik. Bij een crisis: 112 (spoed), 113 (zelfdoding), 0900-1995 Drugs Infolijn Trimbos, Jellinek, Unity.',
+    site_disclaimer_dismiss_label: 'Niet meer tonen',
+    site_disclaimer_close_aria: 'Sluiten',
   },
   en: {
     conclusion: 'Conclusion',
@@ -144,6 +146,8 @@ const I18N = {
     site_disclaimer_label: 'Disclaimer',
     site_disclaimer_body:
       'This website provides general information and is not medical advice. This site does not sell substances or recommend their use. Always consult a physician about your own health and medication. In a crisis: 112 (emergency, NL/EU), 113 (suicide prevention, NL), 988 (suicide prevention, US), or your local emergency services.',
+    site_disclaimer_dismiss_label: "Don't show again",
+    site_disclaimer_close_aria: 'Close',
   },
 };
 
@@ -629,18 +633,42 @@ ${links}
 </aside>`;
 }
 
-/* Site-default safety disclaimer. Rendered at the foot of every
-   article (substance or not) per the YMYL policy: every article must
-   carry the canonical "general information, not medical advice"
-   notice in raw HTML so search and AI engines see it without JS.
-   Phrasing is canonical per the YMYL/GEO standard — render verbatim,
-   do not paraphrase, do not link out (links would attract
-   rel="external" churn and the text is the anchor of record). */
+/* Site-default safety disclaimer. Rendered at the top of <body> on
+   every article so the canonical YMYL "general information, not
+   medical advice" text is in raw HTML for search/AI crawlers without
+   JS. Visually presented as a sticky-top banner that slides down on
+   first paint and can be dismissed via an X. The "remember"
+   checkbox (default checked) writes to localStorage so dismissed
+   users do not see it again. Phrasing is canonical per the YMYL/GEO
+   standard — render verbatim. */
 function renderSiteDisclaimer(lang) {
   const t = I18N[lang];
-  return `<aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="${esc(t.site_disclaimer_label)}">
-<p>${esc(t.site_disclaimer_body)}</p>
-</aside>`;
+  return `<aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="${esc(t.site_disclaimer_label)}" data-state="pending">
+<div class="disclaimer--site-default__inner">
+<p class="disclaimer--site-default__text">${esc(t.site_disclaimer_body)}</p>
+<label class="disclaimer--site-default__remember">
+<input type="checkbox" id="site-disclaimer-remember" checked>
+<span>${esc(t.site_disclaimer_dismiss_label)}</span>
+</label>
+<button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="${esc(t.site_disclaimer_close_aria)}">&times;</button>
+</div>
+</aside>
+<noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>
+<script>
+(function(){
+  var el=document.getElementById('site-disclaimer');
+  if(!el)return;
+  var KEY='siteDisclaimerDismissed';
+  try{if(window.localStorage&&localStorage.getItem(KEY)==='1'){el.setAttribute('data-state','hidden');return;}}catch(e){}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){el.setAttribute('data-state','visible');});});
+  var btn=document.getElementById('site-disclaimer-close');
+  if(btn){btn.addEventListener('click',function(){
+    var rem=document.getElementById('site-disclaimer-remember');
+    if(rem&&rem.checked){try{if(window.localStorage)localStorage.setItem(KEY,'1');}catch(e){}}
+    el.setAttribute('data-state','hidden');
+  });}
+})();
+</script>`;
 }
 
 /* Visible FAQ section. Only emitted when content.js carries
@@ -774,6 +802,8 @@ ${faqPage ? jsonLdBlock(faqPage) + '\n' : ''}${jsonLdBlock(breadcrumbList)}
 </head>
 <body>
 
+${renderSiteDisclaimer(lang)}
+
 <div id="site-header"></div>
 <div class="progress-bar" id="progressBar"></div>
 <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -818,8 +848,6 @@ ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
 ${renderFaqSection(faqs, lang)}
 
 ${isSubstance ? `<div class="wrapper--narrow">${renderHarmReduction(lang)}</div>` : ''}
-
-<div class="wrapper--narrow">${renderSiteDisclaimer(lang)}</div>
 
 </article>
 </main>

@@ -96,6 +96,33 @@
 </head>
 <body>
 
+<aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="Disclaimer" data-state="pending">
+<div class="disclaimer--site-default__inner">
+<p class="disclaimer--site-default__text">This website provides general information and is not medical advice. This site does not sell substances or recommend their use. Always consult a physician about your own health and medication. In a crisis: 112 (emergency, NL/EU), 113 (suicide prevention, NL), 988 (suicide prevention, US), or your local emergency services.</p>
+<label class="disclaimer--site-default__remember">
+<input type="checkbox" id="site-disclaimer-remember" checked>
+<span>Don&#39;t show again</span>
+</label>
+<button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="Close">&times;</button>
+</div>
+</aside>
+<noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>
+<script>
+(function(){
+  var el=document.getElementById('site-disclaimer');
+  if(!el)return;
+  var KEY='siteDisclaimerDismissed';
+  try{if(window.localStorage&&localStorage.getItem(KEY)==='1'){el.setAttribute('data-state','hidden');return;}}catch(e){}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){el.setAttribute('data-state','visible');});});
+  var btn=document.getElementById('site-disclaimer-close');
+  if(btn){btn.addEventListener('click',function(){
+    var rem=document.getElementById('site-disclaimer-remember');
+    if(rem&&rem.checked){try{if(window.localStorage)localStorage.setItem(KEY,'1');}catch(e){}}
+    el.setAttribute('data-state','hidden');
+  });}
+})();
+</script>
+
 <div id="site-header"></div>
 <div class="progress-bar" id="progressBar"></div>
 <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -420,10 +447,6 @@
 <ul>
 <li><a href="https://jellinek.nl/" rel="external">Jellinek</a> &mdash; addiction services</li><li><a href="https://trimbos.nl/" rel="external">Trimbos Institute</a> &mdash; mental health</li><li><a href="https://unity.nl/" rel="external">Unity</a> &mdash; peer education at events</li><li><a href="https://mainline.nl/" rel="external">Mainline</a> &mdash; harm reduction magazine and services</li>
 </ul>
-</aside></div>
-
-<div class="wrapper--narrow"><aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="Disclaimer">
-<p>This website provides general information and is not medical advice. This site does not sell substances or recommend their use. Always consult a physician about your own health and medication. In a crisis: 112 (emergency, NL/EU), 113 (suicide prevention, NL), 988 (suicide prevention, US), or your local emergency services.</p>
 </aside></div>
 
 </article>
