@@ -96,6 +96,33 @@
 </head>
 <body>
 
+<aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="Disclaimer" data-state="pending">
+<div class="disclaimer--site-default__inner">
+<p class="disclaimer--site-default__text">Deze website biedt algemene voorlichting en geen medisch advies. Deze site verkoopt geen middelen en beveelt geen gebruik aan. Overleg altijd met een arts over je eigen gezondheid en medicatiegebruik. Bij een crisis: 112 (spoed), 113 (zelfdoding), 0900-1995 Drugs Infolijn Trimbos, Jellinek, Unity.</p>
+<label class="disclaimer--site-default__remember">
+<input type="checkbox" id="site-disclaimer-remember" checked>
+<span>Niet meer tonen</span>
+</label>
+<button type="button" class="disclaimer--site-default__close" id="site-disclaimer-close" aria-label="Sluiten">&times;</button>
+</div>
+</aside>
+<noscript><style>.disclaimer--site-default{transform:none !important;pointer-events:auto !important;}</style></noscript>
+<script>
+(function(){
+  var el=document.getElementById('site-disclaimer');
+  if(!el)return;
+  var KEY='siteDisclaimerDismissed';
+  try{if(window.localStorage&&localStorage.getItem(KEY)==='1'){el.setAttribute('data-state','hidden');return;}}catch(e){}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){el.setAttribute('data-state','visible');});});
+  var btn=document.getElementById('site-disclaimer-close');
+  if(btn){btn.addEventListener('click',function(){
+    var rem=document.getElementById('site-disclaimer-remember');
+    if(rem&&rem.checked){try{if(window.localStorage)localStorage.setItem(KEY,'1');}catch(e){}}
+    el.setAttribute('data-state','hidden');
+  });}
+})();
+</script>
+
 <div id="site-header"></div>
 <div class="progress-bar" id="progressBar"></div>
 <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
@@ -210,10 +237,6 @@
 <ul>
 <li><a href="https://jellinek.nl/" rel="external">Jellinek</a> &mdash; verslavingszorg</li><li><a href="https://trimbos.nl/" rel="external">Trimbos-instituut</a> &mdash; mentale gezondheid</li><li><a href="https://unity.nl/" rel="external">Unity</a> &mdash; peer education op evenementen</li><li><a href="https://mainline.nl/" rel="external">Mainline</a> &mdash; harm reduction magazine en services</li>
 </ul>
-</aside></div>
-
-<div class="wrapper--narrow"><aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="Disclaimer">
-<p>Deze website biedt algemene voorlichting en geen medisch advies. Deze site verkoopt geen middelen en beveelt geen gebruik aan. Overleg altijd met een arts over je eigen gezondheid en medicatiegebruik. Bij een crisis: 112 (spoed), 113 (zelfdoding), 0900-1995 Drugs Infolijn Trimbos, Jellinek, Unity.</p>
 </aside></div>
 
 </article>

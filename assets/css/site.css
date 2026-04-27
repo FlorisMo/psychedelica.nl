@@ -1826,21 +1826,93 @@ a[data-lang].show { display: inline-flex; }
 .callout a:hover { color: var(--brand-600); }
 .callout--warning { border-left-color: #B85C00; }
 
-/* Site-default disclaimer — rendered on every article foot.
-   Deliberately quieter than .callout: smaller font, muted text,
-   no left accent bar. Findable but not visually loud. */
+/* Site-default disclaimer — sticky-top banner on every article.
+   Slides in from above the viewport on first paint, sits above the
+   site-header (z-index 100) so it overlaps the menu. The user can
+   uncheck the "remember" box to keep it on next visits, or click X
+   to dismiss (with the box checked, dismissal persists via
+   localStorage; otherwise dismissal is for this page only).
+   The static markup carries the canonical YMYL text in raw HTML so
+   crawlers see it without executing JS. */
 .disclaimer--site-default {
-  margin: 40px 0 16px;
-  padding: 16px 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--bg-card, #ffffff);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-100%);
+  transition: transform 0.4s ease-out;
+  pointer-events: none;
 }
-.disclaimer--site-default p {
+.disclaimer--site-default[data-state="visible"] {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.disclaimer--site-default[data-state="hidden"] {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+.disclaimer--site-default__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.disclaimer--site-default__text {
   margin: 0;
+  flex: 1 1 auto;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--text-muted);
+}
+.disclaimer--site-default__remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.disclaimer--site-default__remember input {
+  cursor: pointer;
+  accent-color: var(--brand-700, #553680);
+}
+.disclaimer--site-default__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+.disclaimer--site-default__close:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.04);
+}
+.disclaimer--site-default__close:focus-visible {
+  outline: 2px solid var(--brand-700, #553680);
+  outline-offset: 2px;
+}
+@media (max-width: 720px) {
+  .disclaimer--site-default__inner {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .disclaimer--site-default__text {
+    flex: 1 1 100%;
+    font-size: 12px;
+  }
 }
 
 #faq { border-top: 1px solid var(--border); }
