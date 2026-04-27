@@ -114,6 +114,9 @@ const I18N = {
       { href: 'https://unity.nl/', name: 'Unity', desc: 'peer education op evenementen' },
       { href: 'https://mainline.nl/', name: 'Mainline', desc: 'harm reduction magazine en services' },
     ],
+    site_disclaimer_label: 'Disclaimer',
+    site_disclaimer_body:
+      'Deze website biedt algemene voorlichting en geen medisch advies. Deze site verkoopt geen middelen en beveelt geen gebruik aan. Overleg altijd met een arts over je eigen gezondheid en medicatiegebruik. Bij een crisis: 112 (spoed), 113 (zelfdoding), 0900-1995 Drugs Infolijn Trimbos, Jellinek, Unity.',
   },
   en: {
     conclusion: 'Conclusion',
@@ -138,6 +141,9 @@ const I18N = {
       { href: 'https://unity.nl/', name: 'Unity', desc: 'peer education at events' },
       { href: 'https://mainline.nl/', name: 'Mainline', desc: 'harm reduction magazine and services' },
     ],
+    site_disclaimer_label: 'Disclaimer',
+    site_disclaimer_body:
+      'This website provides general information and is not medical advice. This site does not sell substances or recommend their use. Always consult a physician about your own health and medication. In a crisis: 112 (emergency, NL/EU), 113 (suicide prevention, NL), 988 (suicide prevention, US), or your local emergency services.',
   },
 };
 
@@ -623,6 +629,20 @@ ${links}
 </aside>`;
 }
 
+/* Site-default safety disclaimer. Rendered at the foot of every
+   article (substance or not) per the YMYL policy: every article must
+   carry the canonical "general information, not medical advice"
+   notice in raw HTML so search and AI engines see it without JS.
+   Phrasing is canonical per the YMYL/GEO standard — render verbatim,
+   do not paraphrase, do not link out (links would attract
+   rel="external" churn and the text is the anchor of record). */
+function renderSiteDisclaimer(lang) {
+  const t = I18N[lang];
+  return `<aside class="disclaimer--site-default" role="note" id="site-disclaimer" aria-label="${esc(t.site_disclaimer_label)}">
+<p>${esc(t.site_disclaimer_body)}</p>
+</aside>`;
+}
+
 /* Visible FAQ section. Only emitted when content.js carries
    explicit faqs_<lang> entries. Questions render as h3s so they are
    parsed both by humans and by the FAQPage JSON-LD extractor. */
@@ -798,6 +818,8 @@ ${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
 ${renderFaqSection(faqs, lang)}
 
 ${isSubstance ? `<div class="wrapper--narrow">${renderHarmReduction(lang)}</div>` : ''}
+
+<div class="wrapper--narrow">${renderSiteDisclaimer(lang)}</div>
 
 </article>
 </main>
