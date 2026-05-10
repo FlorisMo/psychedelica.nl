@@ -20,5 +20,16 @@
   "readingTime": 5,
   "date": "2026-03-21",
   "featured": false
-}
+},
+  {
+    "slug": "worden-truffels-gereguleerd-getest-kwaliteit-nederland",
+    "title_nl": "Worden truffels gereguleerd of getest op kwaliteit in Nederland?",
+    "title_en": "Are Truffles Regulated or Tested for Quality in the Netherlands?",
+    "subtitle_nl": "Hoe Warenwet, NVWA, DIMS en HACCP werken voor magic truffels — en waar de gaten zitten.",
+    "subtitle_en": "How the Warenwet, NVWA, DIMS and HACCP work for magic truffles — and where the gaps are.",
+    "tags": ["truffels", "wetgeving", "kwaliteit", "Warenwet", "NVWA", "DIMS"],
+    "readingTime": 7,
+    "date": "2026-04-27",
+    "featured": false
+  }
 ]
