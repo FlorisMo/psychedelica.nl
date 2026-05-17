@@ -597,6 +597,89 @@ async function validateLangPages(v) {
   }
 }
 
+/* ---- content.js source-side check ---- */
+
+const ALLOWED_PARAGRAPH_TAGS = new Set(['strong', 'em', 'a']);
+
+function collectParagraphStringsFromData(data) {
+  const out = [];
+  const collectArr = (arr) => {
+    if (!Array.isArray(arr)) return;
+    for (const p of arr) {
+      if (typeof p === 'string') out.push(p);
+      else if (p && typeof p === 'object') {
+        for (const key of Object.keys(p)) {
+          if (key.startsWith('text_') || key.startsWith('paragraphs_')) {
+            const v2 = p[key];
+            if (typeof v2 === 'string') out.push(v2);
+            else if (Array.isArray(v2)) collectArr(v2);
+          }
+        }
+      }
+    }
+  };
+  for (const lang of ['nl', 'en']) {
+    collectArr(data['intro_' + lang]);
+    collectArr(data['preamble_' + lang]);
+  }
+  for (const s of data.sections || []) {
+    for (const lang of ['nl', 'en']) collectArr(s['paragraphs_' + lang]);
+    for (const sub of (s.subs || s.sub || s.accordions || s.subAccordions || [])) {
+      for (const lang of ['nl', 'en']) collectArr(sub['paragraphs_' + lang]);
+    }
+  }
+  for (const item of data.items || []) {
+    for (const lang of ['nl', 'en']) collectArr(item['paragraphs_' + lang]);
+  }
+  for (const step of data.steps || []) {
+    for (const lang of ['nl', 'en']) collectArr(step['paragraphs_' + lang]);
+  }
+  for (const phase of data.phases || []) {
+    for (const step of phase.steps || []) {
+      for (const lang of ['nl', 'en']) collectArr(step['paragraphs_' + lang]);
+    }
+    for (const lang of ['nl', 'en']) collectArr(phase['paragraphs_' + lang]);
+  }
+  for (const faqList of [data.faqs_nl, data.faqs_en]) {
+    if (!Array.isArray(faqList)) continue;
+    for (const f of faqList) {
+      if (f && typeof f.answer === 'string') out.push(f.answer);
+    }
+  }
+  return out;
+}
+
+/* Reject paragraph strings that carry inline tags outside the whitelist
+   (strong, em, a). Anything else — <script>, <iframe>, <img>, <p>, <br>,
+   custom HTML — must not be in content.js because renderInline would
+   escape it to visible text on the live page. */
+function validateContentJsParagraphs(v, slug, data) {
+  const where = `articles/${slug}/content.js`;
+  const strings = collectParagraphStringsFromData(data);
+  const re = /<\s*\/?\s*([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
+  let bad = null;
+  for (const s of strings) {
+    let m;
+    re.lastIndex = 0;
+    while ((m = re.exec(s)) !== null) {
+      const tag = m[1].toLowerCase();
+      if (!ALLOWED_PARAGRAPH_TAGS.has(tag)) {
+        bad = { tag, sample: s.length > 120 ? s.slice(0, 117) + '...' : s };
+        break;
+      }
+    }
+    if (bad) break;
+  }
+  if (bad) {
+    v.fail(
+      where,
+      `paragraph contains disallowed inline tag <${bad.tag}> (allowed: strong, em, a). Sample: "${bad.sample}"`
+    );
+  } else {
+    v.ok();
+  }
+}
+
 async function main() {
   const v = new Validator();
   const slugs = await discoverArticles();
@@ -614,6 +697,8 @@ async function main() {
   for (const slug of slugs) {
     const source = await readFile(path.join(ARTICLES_DIR, slug, 'content.js'), 'utf8');
     const data = loadContentJs(source, slug);
+
+    validateContentJsParagraphs(v, slug, data);
 
     for (const lang of ['nl', 'en']) {
       const relDir = langPrefix(lang).slice(1);
