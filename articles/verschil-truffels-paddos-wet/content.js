@@ -167,28 +167,28 @@ window.SITE_CONTENT = {
       title_nl: "Bronnen",
       title_en: "Sources",
       paragraphs_nl: [
-        "1. Staatsblad 2008/486 — Wijziging Opiumwet (paddoverbod), wetten.overheid.nl",
-        "2. Kamerstuk 31447/3 — Wetsvoorstel paddoverbod, Tweede Kamer",
-        "3. Kamervragen 2011-2012, nr. 1032 — Bevestiging status sclerotia",
-        "4. Gartz, J. (1994). Extraction and analysis of indole derivatives from fungal biomass. Journal of Basic Microbiology, 34(1), 17-22",
-        "5. Pellegrini, M. et al. (2013). Drug Testing and Analysis. DOI:10.1002/dta.1400",
-        "6. Gotvaldová, K. et al. (2022). Stability of psilocybin and its four analogs in the biomass of the psychotropic mushroom Psilocybe cubensis. International Journal of Molecular Sciences, 23(22), 14068. DOI:10.3390/ijms232214068",
-        "7. Cohen, P.A. et al. (2025). Quantification of psilocybin and psilocin in magic mushroom products. Scientific Reports. DOI:10.1038/s41598-025-97710-z",
-        "8. RIVM/CAM risicobeoordeling sclerotia (2014)",
-        "9. Hoge Raad btw-uitspraak sclerotia (april 2026, ECLI:NL:HR:2026:450)",
-        "10. Rechtbank Gelderland, ECLI:NL:RBGEL:2022:3460"
+        "1. Staatsblad 2008/486 — Wijziging Opiumwet (paddoverbod), https://zoek.officielebekendmakingen.nl/stb-2008-486.html",
+        "2. Kamerstuk 31447/3 — Wetsvoorstel paddoverbod, Tweede Kamer, https://zoek.officielebekendmakingen.nl/kst-31447-3.html",
+        "3. Kamervragen 2011-2012, nr. 1032 — Bevestiging status sclerotia, https://zoek.officielebekendmakingen.nl/ah-tk-20112012-1032.html",
+        "4. Gartz, J. (1994). Extraction and analysis of indole derivatives from fungal biomass. Journal of Basic Microbiology, 34(1), 17-22. https://doi.org/10.1002/jobm.3620340104",
+        "5. Pellegrini, M. et al. (2013). Drug Testing and Analysis. https://doi.org/10.1002/dta.1400",
+        "6. Gotvaldová, K. et al. (2022). Stability of psilocybin and its four analogs in the biomass of the psychotropic mushroom Psilocybe cubensis. International Journal of Molecular Sciences, 23(22), 14068. https://doi.org/10.3390/ijms232214068",
+        "7. Cohen, P.A. et al. (2025). Quantification of psilocybin and psilocin in magic mushroom products. Scientific Reports. https://doi.org/10.1038/s41598-025-97710-z",
+        "8. RIVM/CAM informatierapport sclerotia (2014), https://www.rivm.nl/documenten/informatierapport-sclerotia",
+        "9. Hoge Raad btw-uitspraak sclerotia (april 2026, ECLI:NL:HR:2026:450), https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:HR:2026:450",
+        "10. Rechtbank Gelderland, ECLI:NL:RBGEL:2022:3460, https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:RBGEL:2022:3460"
       ],
       paragraphs_en: [
-        "1. Staatsblad 2008/486 — Opiumwet amendment (mushroom ban), wetten.overheid.nl",
-        "2. Kamerstuk 31447/3 — Mushroom ban bill, Tweede Kamer",
-        "3. Parliamentary questions 2011-2012, nr. 1032 — Confirmation of sclerotia status",
-        "4. Gartz, J. (1994). Extraction and analysis of indole derivatives from fungal biomass. Journal of Basic Microbiology, 34(1), 17-22",
-        "5. Pellegrini, M. et al. (2013). Drug Testing and Analysis. DOI:10.1002/dta.1400",
-        "6. Gotvaldová, K. et al. (2022). Stability of psilocybin and its four analogs in the biomass of the psychotropic mushroom Psilocybe cubensis. International Journal of Molecular Sciences, 23(22), 14068. DOI:10.3390/ijms232214068",
-        "7. Cohen, P.A. et al. (2025). Quantification of psilocybin and psilocin in magic mushroom products. Scientific Reports. DOI:10.1038/s41598-025-97710-z",
-        "8. RIVM/CAM risk assessment of sclerotia (2014)",
-        "9. Hoge Raad VAT ruling on sclerotia (April 2026, ECLI:NL:HR:2026:450)",
-        "10. Rechtbank Gelderland, ECLI:NL:RBGEL:2022:3460"
+        "1. Staatsblad 2008/486 — Opiumwet amendment (mushroom ban), https://zoek.officielebekendmakingen.nl/stb-2008-486.html",
+        "2. Kamerstuk 31447/3 — Mushroom ban bill, Tweede Kamer, https://zoek.officielebekendmakingen.nl/kst-31447-3.html",
+        "3. Parliamentary questions 2011-2012, nr. 1032 — Confirmation of sclerotia status, https://zoek.officielebekendmakingen.nl/ah-tk-20112012-1032.html",
+        "4. Gartz, J. (1994). Extraction and analysis of indole derivatives from fungal biomass. Journal of Basic Microbiology, 34(1), 17-22. https://doi.org/10.1002/jobm.3620340104",
+        "5. Pellegrini, M. et al. (2013). Drug Testing and Analysis. https://doi.org/10.1002/dta.1400",
+        "6. Gotvaldová, K. et al. (2022). Stability of psilocybin and its four analogs in the biomass of the psychotropic mushroom Psilocybe cubensis. International Journal of Molecular Sciences, 23(22), 14068. https://doi.org/10.3390/ijms232214068",
+        "7. Cohen, P.A. et al. (2025). Quantification of psilocybin and psilocin in magic mushroom products. Scientific Reports. https://doi.org/10.1038/s41598-025-97710-z",
+        "8. RIVM/CAM information report on sclerotia (2014), https://www.rivm.nl/documenten/informatierapport-sclerotia",
+        "9. Hoge Raad VAT ruling on sclerotia (April 2026, ECLI:NL:HR:2026:450), https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:HR:2026:450",
+        "10. Rechtbank Gelderland, ECLI:NL:RBGEL:2022:3460, https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:RBGEL:2022:3460"
       ]
     }
   ],
