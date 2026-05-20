@@ -176,28 +176,28 @@ window.SITE_CONTENT = {
       title_nl: "Bronnen",
       title_en: "Sources",
       paragraphs_nl: [
-        "1. Staatsblad 2008, 486 — Wijziging Opiumwet (paddoverbod), zoek.officielebekendmakingen.nl/stb-2008-486.html",
-        "2. Kamerstuk 31 447, nr. 3 — Parlementair dossier paddoverbod, tweedekamer.nl",
-        "3. Aanwijzing Opiumwet (2015A003), om.nl",
-        "4. Richtlijn strafvordering softdrugs (2023R003), om.nl",
-        "5. Gotvaldova K. et al. (2021). Drug Testing and Analysis, 13:439-446. DOI:10.1002/dta.2950",
-        "6. Staatscommissie MDMA (Toebes, 2024). MDMA: Voorbij de extase. rijksoverheid.nl",
-        "7. Nationale Drug Monitor, Trimbos-instituut: drugsinfo.nl",
-        "8. Belgische drugswet, Koninklijk Besluit 22 januari 1998, Artikel 2bis (België — strafmaat psilocybinepaddenstoelen)",
-        "9. Jellinek: jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/",
-        "10. DRUGSinfo.nl (Trimbos): drugsinfo.nl/paddos/zijn-paddos-verboden"
+        "1. Staatsblad 2008, 486 — Wijziging Opiumwet (paddoverbod), zoek.officielebekendmakingen.nl/stb-2008-486.html https://zoek.officielebekendmakingen.nl/stb-2008-486.html",
+        "2. Kamerstuk 31 447, nr. 3 — Parlementair dossier paddoverbod, tweedekamer.nl https://zoek.officielebekendmakingen.nl/kst-31447-3.html",
+        "3. Aanwijzing Opiumwet (2015A003), om.nl https://www.om.nl/onderwerpen/beleidsregels/aanwijzingen/algemeen/aanwijzing-opiumwet-2015a003",
+        "4. Richtlijn strafvordering softdrugs (2023R003), om.nl https://www.om.nl/onderwerpen/beleidsregels/richtlijnen-voor-strafvordering-resultaten/richtlijn-voor-strafvordering-opiumwet-softdrugs-2023r003",
+        "5. Gotvaldova K. et al. (2021). Drug Testing and Analysis, 13:439-446. DOI:10.1002/dta.2950 https://doi.org/10.1002/dta.2950",
+        "6. Staatscommissie MDMA (Toebes, 2024). MDMA: Voorbij de extase. rijksoverheid.nl https://www.rijksoverheid.nl/documenten/rapporten/2024/05/31/vgp-1067133-b-rapport-mdma-voorbij-de-extase",
+        "7. Nationale Drug Monitor, Trimbos-instituut: drugsinfo.nl https://www.drugsinfo.nl/",
+        "8. Belgische drugswet, Koninklijk Besluit 22 januari 1998, Artikel 2bis (België — strafmaat psilocybinepaddenstoelen) https://etaamb.openjustice.be/nl/koninklijk-besluit-van-22-januari-1998_n1998022699.html",
+        "9. Jellinek: jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/ https://www.jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/",
+        "10. DRUGSinfo.nl (Trimbos): drugsinfo.nl/paddos/zijn-paddos-verboden https://www.drugsinfo.nl/paddos/zijn-paddos-verboden"
       ],
       paragraphs_en: [
-        "1. Staatsblad 2008, 486 — Opium Act amendment (mushroom ban), zoek.officielebekendmakingen.nl/stb-2008-486.html",
-        "2. Parliamentary document 31 447, no. 3 — Parliamentary dossier mushroom ban, tweedekamer.nl",
-        "3. Opium Act Directive (Aanwijzing 2015A003), om.nl",
-        "4. Sentencing Guidelines soft drugs (Richtlijn 2023R003), om.nl",
-        "5. Gotvaldova K. et al. (2021). Drug Testing and Analysis, 13:439-446. DOI:10.1002/dta.2950",
-        "6. Staatscommissie MDMA (Toebes, 2024). MDMA: Voorbij de extase. rijksoverheid.nl",
-        "7. Nationale Drug Monitor, Trimbos Institute: drugsinfo.nl",
-        "8. Belgian Narcotics Law, Royal Decree of 22 January 1998, Article 2bis (Belgium — psilocybin mushroom penalties)",
-        "9. Jellinek: jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/",
-        "10. DRUGSinfo.nl (Trimbos): drugsinfo.nl/paddos/zijn-paddos-verboden"
+        "1. Staatsblad 2008, 486 — Opium Act amendment (mushroom ban), zoek.officielebekendmakingen.nl/stb-2008-486.html https://zoek.officielebekendmakingen.nl/stb-2008-486.html",
+        "2. Parliamentary document 31 447, no. 3 — Parliamentary dossier mushroom ban, tweedekamer.nl https://zoek.officielebekendmakingen.nl/kst-31447-3.html",
+        "3. Opium Act Directive (Aanwijzing 2015A003), om.nl https://www.om.nl/onderwerpen/beleidsregels/aanwijzingen/algemeen/aanwijzing-opiumwet-2015a003",
+        "4. Sentencing Guidelines soft drugs (Richtlijn 2023R003), om.nl https://www.om.nl/onderwerpen/beleidsregels/richtlijnen-voor-strafvordering-resultaten/richtlijn-voor-strafvordering-opiumwet-softdrugs-2023r003",
+        "5. Gotvaldova K. et al. (2021). Drug Testing and Analysis, 13:439-446. DOI:10.1002/dta.2950 https://doi.org/10.1002/dta.2950",
+        "6. Staatscommissie MDMA (Toebes, 2024). MDMA: Voorbij de extase. rijksoverheid.nl https://www.rijksoverheid.nl/documenten/rapporten/2024/05/31/vgp-1067133-b-rapport-mdma-voorbij-de-extase",
+        "7. Nationale Drug Monitor, Trimbos Institute: drugsinfo.nl https://www.drugsinfo.nl/",
+        "8. Belgian Narcotics Law, Royal Decree of 22 January 1998, Article 2bis (Belgium — psilocybin mushroom penalties) https://etaamb.openjustice.be/nl/koninklijk-besluit-van-22-januari-1998_n1998022699.html",
+        "9. Jellinek: jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/ https://www.jellinek.nl/vraag-antwoord/truffels-en-paddos-en-de-wet/",
+        "10. DRUGSinfo.nl (Trimbos): drugsinfo.nl/paddos/zijn-paddos-verboden https://www.drugsinfo.nl/paddos/zijn-paddos-verboden"
       ]
     }
   ],
