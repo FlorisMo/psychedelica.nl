@@ -237,14 +237,132 @@ function wordCount(text) {
 
 /* ------------------------------ paragraph HTML ------------------------------ */
 
+/* Allowed inline tags inside paragraph strings. Anything else is escaped as
+   literal text so authors cannot inject <script>, <iframe>, etc. */
+const ALLOWED_INLINE_TAGS = new Set(['strong', 'em', 'a']);
+
+/* True when the href is safe to emit. Allows relative paths and fragments,
+   tel:/mailto: schemes, and any https:// URL (renderAnchor handles the
+   rel="external" attribute for off-domain origins). Rejects javascript:,
+   data:, vbscript:, and anything that doesn't parse as a URL. */
+function isSafeHref(href) {
+  if (!href) return false;
+  const s = String(href).trim();
+  if (!s) return false;
+  if (s.startsWith('/') || s.startsWith('#') || s.startsWith('?')) return true;
+  if (/^(tel|mailto):/i.test(s)) return true;
+  if (/^https?:\/\//i.test(s)) {
+    try { new URL(s); return true; } catch { return false; }
+  }
+  return false;
+}
+
+/* Escape a plain-text run, then turn bare URLs into <a> elements.
+   URLs are detected on the raw run (before escaping) so we don't need to
+   handle &amp; in the regex; renderAnchor re-escapes when emitting the
+   final <a href="..."> attribute. Trailing sentence punctuation is peeled
+   off the URL so "see https://example.com." doesn't link the dot too. */
+function autolinkAndEscape(text) {
+  if (!text) return '';
+  const URL_RE = /(https?:\/\/[^\s<>"']+|tel:\+?[\d\- ]+|mailto:[^\s<>"']+)/gi;
+  let out = '';
+  let lastIdx = 0;
+  let m;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(text)) !== null) {
+    const start = m.index;
+    const matched = m[0];
+    if (start > lastIdx) out += esc(text.slice(lastIdx, start));
+    let url = matched;
+    let trailing = '';
+    while (url.length && /[.,;:!?)\]}>'"]/.test(url[url.length - 1])) {
+      trailing = url[url.length - 1] + trailing;
+      url = url.slice(0, -1);
+    }
+    if (isSafeHref(url)) {
+      out += renderAnchor(url, url);
+      out += esc(trailing);
+    } else {
+      out += esc(matched);
+    }
+    lastIdx = start + matched.length;
+  }
+  if (lastIdx < text.length) out += esc(text.slice(lastIdx));
+  return out;
+}
+
+/* Render a paragraph string. Passes through whitelisted inline tags
+   (<strong>, <em>, <a href="...">), auto-linkifies bare URLs in the
+   surrounding text, and HTML-escapes everything else. Any unrecognised
+   tag becomes a literal "&lt;" + tag-name text. */
+function renderInline(str) {
+  if (!str) return '';
+  const s = String(str);
+  let out = '';
+  let i = 0;
+  const n = s.length;
+  while (i < n) {
+    const lt = s.indexOf('<', i);
+    if (lt < 0) {
+      out += autolinkAndEscape(s.slice(i));
+      break;
+    }
+    if (lt > i) out += autolinkAndEscape(s.slice(i, lt));
+    const rest = s.slice(lt);
+    let consumed = 0;
+    let chunk = '';
+    /* <a href="..."> ... </a> */
+    let m = rest.match(/^<a\s+href=(?:"([^"<>]*)"|'([^'<>]*)')\s*>/i);
+    if (m) {
+      const href = m[1] != null ? m[1] : m[2];
+      if (isSafeHref(href)) {
+        const after = lt + m[0].length;
+        const closeIdx = s.toLowerCase().indexOf('</a>', after);
+        if (closeIdx >= 0) {
+          const inner = s.slice(after, closeIdx);
+          const external = isExternalHref(href);
+          const relAttr = external ? ' rel="external"' : '';
+          chunk = `<a href="${esc(href)}"${relAttr}>${renderInline(inner)}</a>`;
+          consumed = closeIdx + 4 - lt;
+        }
+      }
+    }
+    /* <strong>...</strong> or <em>...</em> */
+    if (!consumed) {
+      m = rest.match(/^<(strong|em)\s*>/i);
+      if (m) {
+        const tag = m[1].toLowerCase();
+        const after = lt + m[0].length;
+        const closeTag = `</${tag}>`;
+        const lowered = s.toLowerCase();
+        const closeIdx = lowered.indexOf(closeTag, after);
+        if (closeIdx >= 0) {
+          const inner = s.slice(after, closeIdx);
+          chunk = `<${tag}>${renderInline(inner)}</${tag}>`;
+          consumed = closeIdx + closeTag.length - lt;
+        }
+      }
+    }
+    if (consumed > 0) {
+      out += chunk;
+      i = lt + consumed;
+    } else {
+      /* Unrecognised tag — escape the '<' literally and keep going. */
+      out += '&lt;';
+      i = lt + 1;
+    }
+  }
+  return out;
+}
+
 function renderParagraphs(arr, lang) {
   if (!Array.isArray(arr)) return '';
   return arr
     .map((p) => {
-      if (typeof p === 'string') return `<p>${esc(p)}</p>`;
+      if (typeof p === 'string') return `<p>${renderInline(p)}</p>`;
       const h = pickField(p, 'heading', lang);
       const t = pickField(p, 'text', lang);
-      return `<div class="step-sub"><h4>${esc(h)}</h4><p>${esc(t)}</p></div>`;
+      return `<div class="step-sub"><h4>${esc(h)}</h4><p>${renderInline(t)}</p></div>`;
     })
     .join('\n');
 }
