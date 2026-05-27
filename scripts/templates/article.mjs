@@ -312,7 +312,12 @@ function renderInline(str) {
     let consumed = 0;
     let chunk = '';
     /* <a href="..."> ... </a> */
-    let m = rest.match(/^<a\s+href=(?:"([^"<>]*)"|'([^'<>]*)')\s*>/i);
+    /* <a href="..."> with optional safe attributes (target="_blank", rel="...",
+       title="...", etc.) before the closing '>'. We ignore the extra attrs
+       and always re-emit a clean href + computed rel="external" for off-domain
+       hosts. The negative-set [^<>] keeps the match bounded to one tag and
+       prevents nested-tag injection. */
+    let m = rest.match(/^<a\s+href=(?:"([^"<>]*)"|'([^'<>]*)')(?:\s+[^<>]*)?\s*>/i);
     if (m) {
       const href = m[1] != null ? m[1] : m[2];
       if (isSafeHref(href)) {
@@ -377,7 +382,7 @@ function renderSubAccordions(subs, lang) {
       return `<details class="sub-accordion accordion" id="${esc(s.id)}">
 <summary class="accordion-trigger">${esc(pickField(s, 'title', lang))}${CHEVRON_SVG}</summary>
 <div class="accordion-body"><div class="accordion-content">${pars
-        .map((p) => `<p>${esc(p)}</p>`)
+        .map((p) => `<p>${renderInline(p)}</p>`)
         .join('')}</div></div>
 </details>`;
     })
@@ -393,7 +398,7 @@ function renderAccordions(accs, lang) {
       return `<details class="accordion" id="${esc(a.id)}">
 <summary class="accordion-trigger">${esc(pickField(a, 'title', lang))}${CHEVRON_SVG}</summary>
 <div class="accordion-body"><div class="accordion-content">${pars
-        .map((p) => `<p>${esc(p)}</p>`)
+        .map((p) => `<p>${renderInline(p)}</p>`)
         .join('')}${renderSubAccordions(subs, lang)}</div></div>
 </details>`;
     })
@@ -423,7 +428,7 @@ function renderListicleBody(data, lang) {
 <span class="step-number">${esc(item.number)}</span>
 <h2 class="step-title">${esc(pickField(item, 'title', lang))}</h2>
 </div>
-<div class="step-body">${pars.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+<div class="step-body">${pars.map((p) => `<p>${renderInline(p)}</p>`).join('')}</div>
 </section>
 </div>`;
     })
@@ -460,7 +465,7 @@ ${renderAccordions(ctxAccs, lang)}
   if (preamble.length) {
     html += `<div class="wrapper--narrow">
 <section id="preamble" style="padding:24px 0 16px;">
-${preamble.map((p) => `<p style="max-width:var(--content-width)">${esc(p)}</p>`).join('')}
+${preamble.map((p) => `<p style="max-width:var(--content-width)">${renderInline(p)}</p>`).join('')}
 </section>
 </div>`;
   }
@@ -966,7 +971,7 @@ ${renderByline(author, lang)}
 
 <section class="wrapper--narrow" id="introductie">
 <div style="padding:48px 0 40px;">
-${intro.map((p) => `<p style="max-width:var(--content-width)">${esc(p)}</p>`).join('\n')}
+${intro.map((p) => `<p style="max-width:var(--content-width)">${renderInline(p)}</p>`).join('\n')}
 </div>
 </section>
 
@@ -977,7 +982,7 @@ ${body}
 <section class="conclusion-section" id="conclusie">
 <div class="conclusion-inner">
 <h2>${esc(t.conclusion)}</h2>
-${conclusion.map((p) => `<p>${esc(p)}</p>`).join('\n')}
+${conclusion.map((p) => `<p>${renderInline(p)}</p>`).join('\n')}
 </div>
 </section>
 
